@@ -240,7 +240,7 @@ function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFo
                     )}
                 </div>
             </div>
-            {post.content && <div className="px-4 pb-3"><p className="text-gray-800 leading-relaxed text-sm">{post.content}</p></div>}
+            {post.content && <div className="px-4 pb-3"><p className="text-gray-800 leading-relaxed text-sm whitespace-pre-wrap break-words">{post.content}</p></div>}
             {(post.images?.length > 0 || post.image_url) && <PostImageGallery images={post.images?.length > 0 ? post.images : [post.image_url]} isAd={post.is_ad} linkUrl={post.link_url} />}
             {(likes.length > 0 || loves.length > 0 || (post.comments_count || 0) > 0) && (
                 <div className="px-4 py-1.5 flex items-center justify-between text-xs text-gray-500 border-t">

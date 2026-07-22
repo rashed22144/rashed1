@@ -268,7 +268,7 @@ const translations = {
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-    const [language, setLanguageState] = useState(() => localStorage.getItem('appLanguage') || 'ar');
+    const [language, setLanguageState] = useState(() => localStorage.getItem('appLanguage') || 'en');
 
     const dir = language === 'ar' ? 'rtl' : 'ltr';
 
