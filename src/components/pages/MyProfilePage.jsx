@@ -323,7 +323,7 @@ function CommentCard({ comment, post, language, timeAgo, user, onDelete }) {
                         </Link>
                     </div>
                     {post.content && (
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap mb-2">{post.content}</p>
+                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words mb-2">{post.content}</p>
                     )}
                     {(post.images?.length > 0 || post.image_url) && (
                         <div className="rounded-xl overflow-hidden border border-gray-100">
@@ -356,7 +356,7 @@ function CommentCard({ comment, post, language, timeAgo, user, onDelete }) {
                         <button onClick={() => setIsEditing(false)} className="p-1.5 bg-gray-200 rounded-lg"><X className="w-4 h-4" /></button>
                     </div>
                 ) : (
-                    <p className="text-gray-700 text-sm flex-1">{localContent}</p>
+                    <p className="text-gray-700 text-sm flex-1 break-words">{localContent}</p>
                 )}
                 {!isEditing && (
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">

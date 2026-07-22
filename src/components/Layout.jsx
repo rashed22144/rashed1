@@ -39,7 +39,7 @@ export default function Layout({ children }) {
                         <SearchBar placeholder={language === 'ar' ? 'ابحث عن الخدمات...' : 'Search services...'} />
                     </div>
 
-                    <nav className="flex items-center gap-1 order-2 md:order-3">
+                    <nav className="flex flex-wrap items-center justify-end gap-1 order-2 md:order-3 w-full md:w-auto">
                         {navItems.map((item) => (
                             <Link
                                 key={item.to}
