@@ -5,6 +5,8 @@ import { LanguageProvider } from '@/lib/LanguageContext';
 import { LocationProvider } from '@/components/LocationContext';
 import { AuthProvider } from '@/lib/AuthContext';
 import Layout from '@/components/Layout';
+import { SpeedInsights } from "@vercel/speed-insights/react";
+import { Analytics } from "@vercel/analytics/react";
 
 import HomePage from '@/components/pages/HomePage';
 import AddService from '@/components/pages/AddService';
@@ -42,6 +44,8 @@ function App() {
         </Router>
         </AuthProvider>
       </LocationProvider>
+      <SpeedInsights />
+      <Analytics />
     </LanguageProvider>
   );
 }
