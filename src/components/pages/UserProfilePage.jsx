@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ServicePublic } from '@/entities/ServicePublic';
 import { backend } from '@/api/backendClient';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -40,7 +41,7 @@ export default function UserProfilePage() {
             const [allUsers, postsData, servicesData, followersData, followingData, allPosts, allComments] = await Promise.all([
                 backend.entities.User.list(),
                 backend.entities.Post.filter({ author_email: profileEmail }),
-                backend.entities.Service.filter({ email: profileEmail }),
+                ServicePublic.filter({ created_by: profileEmail }),
                 backend.entities.Follow.filter({ following_email: profileEmail }),
                 backend.entities.Follow.filter({ follower_email: profileEmail }),
                 backend.entities.Post.list('-created_date', 200),

@@ -6,6 +6,7 @@ const TABLE_MAP = {
     Category: 'categories',
     Location: 'locations',
     User: 'users',
+    UserAdmin: 'users',   // الأدمن فقط: قراءة كاملة (phone, warnings, banned_until...)
     Post: 'posts',
     PostComment: 'post_comments',
     Follow: 'follows',
@@ -28,10 +29,12 @@ function toError(supabaseError, fallbackMessage) {
 }
 
 // مصنع عام لإنشاء "Entity" متوافق مع نفس واجهة backend (list/filter/get/create/update/delete)
-function createEntity(tableName) {
+// القراءة العامة لجدول users تتم من view آمن (users_public) بدون الحقول الحساسة
+const READ_TABLE_MAP = { users: 'users_public' };
+function createEntity(tableName, readTable = tableName) {
     return {
         async list(sort, limit) {
-            let query = supabase.from(tableName).select('*');
+            let query = supabase.from(readTable).select('*');
             query = applySort(query, sort);
             if (limit) query = query.limit(limit);
             const { data, error } = await query;
@@ -40,7 +43,7 @@ function createEntity(tableName) {
         },
 
         async filter(filters = {}, sort, limit) {
-            let query = supabase.from(tableName).select('*');
+            let query = supabase.from(readTable).select('*');
             Object.entries(filters || {}).forEach(([key, value]) => {
                 if (value !== undefined) query = query.eq(key, value);
             });
@@ -52,7 +55,7 @@ function createEntity(tableName) {
         },
 
         async get(id) {
-            const { data, error } = await supabase.from(tableName).select('*').eq('id', id).maybeSingle();
+            const { data, error } = await supabase.from(readTable).select('*').eq('id', id).maybeSingle();
             if (error) throw toError(error, `تعذر جلب هذا العنصر من ${tableName}`);
             return data;
         },
@@ -79,7 +82,10 @@ function createEntity(tableName) {
 
 const entities = {};
 Object.entries(TABLE_MAP).forEach(([entityName, tableName]) => {
-    entities[entityName] = createEntity(tableName);
+    entities[entityName] = createEntity(
+        tableName,
+        entityName === 'UserAdmin' ? tableName : (READ_TABLE_MAP[tableName] || tableName)
+    );
 });
 
 // جلب/إنشاء صف المستخدم في جدول users بمطابقة الإيميل مع حساب Supabase Auth

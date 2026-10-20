@@ -104,7 +104,7 @@ export default function ServiceDetailPage() {
   };
 
   const isOwnService = currentUser?.email && currentUser.email === service?.created_by;
-  const alreadyReported = currentUser?.email && (service?.reports || []).includes(currentUser.email);
+  const alreadyReported = currentUser?.email && service?.already_reported;
 
   const handleReport = async () => {
     if (!currentUser?.email || alreadyReported || !service) return;
@@ -112,8 +112,8 @@ export default function ServiceDetailPage() {
       await reportService(service.id, reportReason.trim());
       setService(prev => ({
         ...prev,
-        reports: [...(prev.reports || []), currentUser.email],
-        report_reasons: [...(prev.report_reasons || []), reportReason.trim() || (language === 'en' ? 'No reason' : 'بدون سبب')],
+        already_reported: true,
+        reports_count: (prev.reports_count || 0) + 1,
       }));
       setShowReportBox(false);
       setReportReason('');

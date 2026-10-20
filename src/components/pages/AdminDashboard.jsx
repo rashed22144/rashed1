@@ -36,7 +36,7 @@ export default function AdminDashboard() {
 
             const [postsResult, usersResult, servicesResult, reviewsResult, commentsResult] = await Promise.allSettled([
                 backend.entities.Post.list('-created_date', 200),
-                backend.entities.User.list(),
+                backend.entities.UserAdmin.list(),
                 backend.entities.Service.list('-created_date', 200),
                 backend.entities.Review.list('-created_date', 200),
                 backend.entities.PostComment.list('-created_date', 500),
