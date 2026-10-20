@@ -25,6 +25,21 @@ export function createPageUrl(pageNameWithParams) {
     return query ? `${path}?${query}` : path;
 }
 
+// يقبل فقط روابط http/https (يمنع javascript: و data: وغيرها من روابط المستخدمين)
+export function isSafeHttpUrl(raw) {
+    if (!raw || typeof raw !== 'string') return false;
+    try {
+        const url = new URL(raw.trim());
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
+export function safeHttpUrl(raw) {
+    return isSafeHttpUrl(raw) ? raw.trim() : null;
+}
+
 // ينظف رقم الهاتف من أي مسافات أو رموز عشان يشتغل رابط واتساب صح (wa.me يحتاج أرقام بس)
 export function toWhatsAppNumber(raw) {
     if (!raw) return '';
