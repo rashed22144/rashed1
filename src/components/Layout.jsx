@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/NotificationBell';
 
 export default function Layout({ children }) {
-    const { t, dir, language } = useLanguage();
+    const { t, dir } = useLanguage();
     const { currentUser, isLoading, loginWithGoogle, logout } = useAuth();
 
     const navItems = [
@@ -32,11 +32,11 @@ export default function Layout({ children }) {
             <header className="sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
                     <Link to={createPageUrl('HomePage')} className="font-black text-lg text-blue-600 shrink-0">
-                        {language === 'ar' ? 'خدماتي' : 'MyServices'}
+                        {t('appName')}
                     </Link>
 
                     <div className="flex-1 min-w-[180px] order-3 md:order-2">
-                        <SearchBar placeholder={language === 'ar' ? 'ابحث عن الخدمات...' : 'Search services...'} />
+                        <SearchBar placeholder={t('searchServicesPlaceholder')} />
                     </div>
 
                     <nav className="flex flex-wrap items-center justify-end gap-1 order-2 md:order-3 w-full md:w-auto">
@@ -54,7 +54,7 @@ export default function Layout({ children }) {
                         <Link
                             to={createPageUrl('LanguageSettingsPage')}
                             className="p-2 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition-colors"
-                            title={language === 'ar' ? 'اللغة' : 'Language'}
+                            title={t('languageLabel')}
                         >
                             <Languages className="w-4 h-4" />
                         </Link>
@@ -67,7 +67,7 @@ export default function Layout({ children }) {
                         ) : currentUser ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-gray-50 transition-colors">
+                                    <button type="button" aria-label={t('myProfile')} className="flex items-center gap-2 ps-1 pe-2 py-1 rounded-full hover:bg-gray-50 transition-colors">
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={currentUser.avatar_url} />
                                             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs font-bold">
@@ -80,7 +80,7 @@ export default function Layout({ children }) {
                                     <DropdownMenuItem>
                                         <Link to={createPageUrl('MyProfilePage')} className="flex items-center gap-2 w-full">
                                             <UserCircle className="w-4 h-4" />
-                                            {language === 'ar' ? 'حسابي' : 'My Profile'}
+                                            {t('myProfile')}
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
@@ -93,20 +93,20 @@ export default function Layout({ children }) {
                                         <DropdownMenuItem>
                                             <Link to={createPageUrl('AdminDashboard')} className="flex items-center gap-2 w-full text-red-600">
                                                 <ShieldCheck className="w-4 h-4" />
-                                                {language === 'ar' ? 'لوحة المدير' : 'Admin Dashboard'}
+                                                {t('adminDashboard')}
                                             </Link>
                                         </DropdownMenuItem>
                                     )}
                                     <DropdownMenuItem onClick={logout} className="text-red-600">
                                         <LogOut className="w-4 h-4" />
-                                        {language === 'ar' ? 'تسجيل الخروج' : 'Logout'}
+                                        {t('logout')}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         ) : (
                             <Button onClick={loginWithGoogle} size="sm" className="rounded-full flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700">
                                 <LogIn className="w-4 h-4" />
-                                <span className="hidden sm:inline">{language === 'ar' ? 'دخول بحساب Google' : 'Sign in with Google'}</span>
+                                <span className="hidden sm:inline">{t('signInWithGoogle')}</span>
                             </Button>
                         )}
                     </nav>
