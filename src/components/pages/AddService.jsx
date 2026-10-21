@@ -16,11 +16,9 @@ import { LocationContext } from '../LocationContext';
 import { backend } from '@/api/backendClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getFriendlyErrorMessage } from '@/lib/friendlyError';
 
 const MAX_SERVICES = 3;
-
-// ضع بريدك الإلكتروني هنا لاستقبال إشعارات الخدمات الجديدة
-const ADMIN_EMAIL = 's2176951@gmail.com';
 
 export default function AddServicePage() {
     const { location: userLocation } = useContext(LocationContext);
@@ -113,29 +111,12 @@ export default function AddServicePage() {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const createdService = await Service.create({ ...formData, created_by: authUser?.email });
-
-            // إرسال إشعار بريد إلكتروني للمشرف
-            backend.integrations.Core.SendEmail({
-                to: ADMIN_EMAIL,
-                subject: `🆕 خدمة جديدة أضيفت: ${formData.name}`,
-                body: `
-                    <h2>تم إضافة خدمة جديدة في المنصة</h2>
-                    <ul>
-                        <li><strong>اسم الخدمة:</strong> ${formData.name}</li>
-                        <li><strong>القسم:</strong> ${formData.category_name}</li>
-                        <li><strong>مقدم الخدمة:</strong> ${formData.provider_name}</li>
-                        <li><strong>الموقع:</strong> ${formData.city}, ${formData.country}</li>
-                        <li><strong>الهاتف:</strong> ${formData.phone || 'غير محدد'}</li>
-                        <li><strong>البريد:</strong> ${formData.email || 'غير محدد'}</li>
-                    </ul>
-                `
-            });
+            await Service.create({ ...formData, created_by: authUser?.email });
 
             navigate(createPageUrl('CategoryPage?name=' + encodeURIComponent(formData.category_name)));
         } catch (error) {
             console.error("Failed to create service:", error);
-            alert(`حدث خطأ في إضافة الخدمة: ${error.message}`);
+            alert(getFriendlyErrorMessage(error, t));
         } finally {
             setIsSubmitting(false);
         }
@@ -165,7 +146,7 @@ export default function AddServicePage() {
                         className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-3.5 font-semibold transition-colors"
                     >
                         <LogIn className="w-5 h-5" />
-                        {language === 'en' ? 'Sign in with Google' : 'تسجيل الدخول بحساب Google'}
+                        {t('loginWithGoogleBtn')}
                     </button>
                 </div>
             </div>
@@ -178,12 +159,10 @@ export default function AddServicePage() {
             <div className="bg-gradient-to-br from-red-500 to-red-700 px-8 py-10">
                 <ShieldAlert className="w-16 h-16 text-white mx-auto mb-3" />
                 <h2 className="text-xl font-bold text-white mb-2">
-                    {language === 'en' ? 'Your account is banned from posting' : 'حسابك محظور مؤقتاً من النشر'}
+                    {t('bannedFromPosting')}
                 </h2>
                 <p className="text-white/80 text-sm">
-                    {language === 'en'
-                        ? `You can browse only until ${new Date(authUser.banned_until).toLocaleDateString('en-US')}`
-                        : `يمكنك التصفح فقط حتى ${new Date(authUser.banned_until).toLocaleDateString('ar')}`}
+                    {t('browseOnlyUntil', { date: new Date(authUser.banned_until).toLocaleDateString(language === 'ar' ? 'ar' : 'en-US') })}
                 </p>
             </div>
         </div>
@@ -363,7 +342,7 @@ export default function AddServicePage() {
                     </CardContent>
                     <CardFooter>
                          <Button type="submit" size="lg" className="w-full bg-gradient-to-r from-blue-600 to-blue-800" disabled={isSubmitting}>
-                             <Send className="ml-2 h-5 w-5" />
+                             <Send className="me-2 h-5 w-5" />
                             {isSubmitting ? t('sendingService') : t('submitServiceBtn')}
                         </Button>
                     </CardFooter>

@@ -10,6 +10,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { createPageUrl, toWhatsAppNumber } from '@/utils';
 import { backend, getServiceContact, incrementServiceView, reportService } from '@/api/backendClient';
 import { getCategoriesMap } from '@/lib/categoriesCache';
+import { getFriendlyErrorMessage } from '@/lib/friendlyError';
 
 const defaultImages = {
   'تعليم وتدريب': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -79,7 +80,7 @@ export default function ServiceDetailPage() {
 
   const handleContactAction = async (field, action) => {
     if (!currentUser) {
-      setContactError(language === 'en' ? 'Please sign in to view contact info' : 'يجب تسجيل الدخول لعرض بيانات التواصل');
+      setContactError(t('signInToViewContact'));
       return;
     }
     setContactError('');
@@ -92,12 +93,12 @@ export default function ServiceDetailPage() {
       }
       const value = info?.[field];
       if (!value) {
-        setContactError(language === 'en' ? 'Contact info unavailable' : 'بيانات التواصل غير متاحة');
+        setContactError(t('contactUnavailable'));
         return;
       }
       action(value);
     } catch (error) {
-      setContactError(error.message);
+      setContactError(getFriendlyErrorMessage(error, t));
     } finally {
       setActingOn(null);
     }
@@ -120,6 +121,7 @@ export default function ServiceDetailPage() {
       setReportSent(true);
     } catch (error) {
       console.error('Failed to report service:', error);
+      setContactError(getFriendlyErrorMessage(error, t));
     }
   };
 
@@ -134,7 +136,7 @@ export default function ServiceDetailPage() {
   if (!service) {
     return (
       <div className="text-center py-20 text-gray-500">
-        <p>{language === 'en' ? 'Service not found.' : 'الخدمة غير موجودة.'}</p>
+        <p>{t('serviceNotFound')}</p>
       </div>
     );
   }
@@ -152,14 +154,14 @@ export default function ServiceDetailPage() {
           reportSent || alreadyReported ? (
             <span className="text-xs text-gray-400 flex items-center gap-1">
               <Flag className="w-3.5 h-3.5" />
-              {language === 'en' ? 'Reported' : 'تم الإبلاغ'}
+              {t('reportedLabel')}
             </span>
           ) : showReportBox ? (
             <div className="flex items-center gap-2">
               <input
                 value={reportReason}
                 onChange={(e) => setReportReason(e.target.value)}
-                placeholder={language === 'en' ? 'Reason (optional)...' : 'السبب (اختياري)...'}
+                placeholder={t('reportReasonOptional')}
                 className="text-xs border border-orange-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-orange-400"
               />
               <button onClick={handleReport} className="text-xs font-bold text-orange-600 hover:underline">✓</button>
@@ -171,7 +173,7 @@ export default function ServiceDetailPage() {
               className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-orange-500 transition-colors"
             >
               <Flag className="w-3.5 h-3.5" />
-              {language === 'en' ? 'Report' : 'إبلاغ عن الخدمة'}
+              {t('reportService')}
             </button>
           )
         )}
@@ -185,13 +187,13 @@ export default function ServiceDetailPage() {
             alt={service.name}
             className="w-full h-72 object-cover"
           />
-          <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+          <div className="absolute top-4 end-4 flex flex-col gap-2 items-end">
             <Badge variant="secondary" className="bg-white/90 text-gray-800 backdrop-blur-sm">
               {(language === 'en' && categoriesMap[service.category_name]?.name_en) || service.category_name}
             </Badge>
             {service.subscription_plan === 'premium' && (
               <Badge className="bg-gradient-to-r from-blue-400 to-blue-600 text-white">
-                <Crown className="w-3 h-3 mr-1" />
+                <Crown className="w-3 h-3 me-1" />
                 {t('premium')}
               </Badge>
             )}
@@ -282,7 +284,7 @@ export default function ServiceDetailPage() {
             </div>
             {!currentUser && (service.has_phone || service.has_whatsapp || service.has_email) && (
               <p className="text-xs text-gray-400 mt-2">
-                {language === 'en' ? 'Sign in to use contact buttons.' : 'سجل دخولك لاستخدام أزرار التواصل.'}
+                {t('signInToUseContact')}
               </p>
             )}
           </div>

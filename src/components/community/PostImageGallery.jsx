@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { safeHttpUrl } from '@/utils';
 
 export default function PostImageGallery({ images = [], isAd = false, linkUrl = null }) {
     const [lightboxIndex, setLightboxIndex] = useState(null);
@@ -7,8 +8,9 @@ export default function PostImageGallery({ images = [], isAd = false, linkUrl = 
     if (!images || images.length === 0) return null;
 
     const handleImageClick = (i) => {
-        if (linkUrl) {
-            window.open(linkUrl, '_blank', 'noopener,noreferrer');
+        const safeLink = safeHttpUrl(linkUrl);
+        if (safeLink) {
+            window.open(safeLink, '_blank', 'noopener,noreferrer');
         } else {
             setLightboxIndex(i);
         }
@@ -57,7 +59,7 @@ export default function PostImageGallery({ images = [], isAd = false, linkUrl = 
                                 style={{ imageRendering: 'high-quality' }} 
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-                            {linkUrl && (
+                            {safeHttpUrl(linkUrl) && (
                                 <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-sm">
                                     🔗
                                 </div>

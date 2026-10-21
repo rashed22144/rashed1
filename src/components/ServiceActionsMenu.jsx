@@ -24,9 +24,10 @@ import { Button } from '@/components/ui/button';
 // السطر 21 (أصلحنا الكلمة المكسورة)
 import { Service } from '@/entities/Service';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getFriendlyErrorMessage } from '@/lib/friendlyError';
 
 export default function ServiceActionsMenu({ service, onServiceDeleted, isOwner = false, onEditClick, onViewClick }) {
-    const { language, dir } = useLanguage();
+    const { t, dir } = useLanguage();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isAlertOpen, setIsAlertOpen] = useState(false);
 
@@ -38,7 +39,7 @@ export default function ServiceActionsMenu({ service, onServiceDeleted, isOwner 
             setIsAlertOpen(false);
         } catch (error) {
             console.error('خطأ في حذف الخدمة:', error);
-            alert(language === 'en' ? `Failed to delete service: ${error.message}` : `حدث خطأ في حذف الخدمة: ${error.message}`);
+            alert(getFriendlyErrorMessage(error, t));
         } finally {
             setIsDeleting(false);
         }
@@ -69,7 +70,7 @@ export default function ServiceActionsMenu({ service, onServiceDeleted, isOwner 
                         className="cursor-pointer gap-2 text-sm font-medium rounded-lg p-2 transition-colors hover:bg-gray-50 text-gray-700"
                     >
                         <Eye className="h-4 w-4 text-gray-400" />
-                        <span>{language === 'en' ? 'Preview Service' : 'معاينة الخدمة'}</span>
+                        <span>{t('previewService')}</span>
                     </DropdownMenuItem>
                     
                     {/* خيار التعديل */}
@@ -78,7 +79,7 @@ export default function ServiceActionsMenu({ service, onServiceDeleted, isOwner 
                         className="cursor-pointer gap-2 text-sm font-medium rounded-lg p-2 transition-colors hover:bg-gray-50 text-gray-700"
                     >
                         <Edit className="h-4 w-4 text-gray-400" />
-                        <span>{language === 'en' ? 'Edit Service' : 'تعديل الخدمة'}</span>
+                        <span>{t('editService')}</span>
                     </DropdownMenuItem>
                     
                     {/* خط فاصل صغير للتنظيم البصري */}
@@ -91,20 +92,18 @@ export default function ServiceActionsMenu({ service, onServiceDeleted, isOwner 
                                 className="cursor-pointer gap-2 text-sm font-medium rounded-lg p-2 text-red-600 focus:text-red-700 focus:bg-red-50 transition-colors"
                             >
                                 <Trash2 className="h-4 w-4" />
-                                <span>{language === 'en' ? 'Delete Service' : 'حذف الخدمة'}</span>
+                                <span>{t('deleteService')}</span>
                             </DropdownMenuItem>
                         </AlertDialogTrigger>
                         
                         <AlertDialogContent className="rounded-2xl max-w-md border border-gray-100 p-6 shadow-xl animate-in zoom-in-95">
-                            <AlertDialogHeader className={dir === 'rtl' ? 'text-right' : 'text-left'}>
+                            <AlertDialogHeader className="text-start">
                                 <AlertDialogTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
                                     <Trash2 className="h-5 w-5 text-red-500" />
-                                    {language === 'en' ? 'Confirm Final Deletion' : 'تأكيد الحذف النهائي'}
+                                    {t('confirmDeleteTitle')}
                                 </AlertDialogTitle>
                                 <AlertDialogDescription className="text-sm text-gray-500 mt-2 leading-relaxed">
-                                    {language === 'en'
-                                        ? `Are you sure you want to permanently delete "${service?.name || 'this service'}"? This action cannot be undone.`
-                                        : `هل أنت متأكد تماماً من رغبتك في حذف خدمة "${service?.name || 'هذه الخدمة'}"؟ يرجى العلم أن هذا الإجراء سيقوم بإزالة الخدمة وتفاصيلها من المنصة بشكل نهائي ولا يمكن استعادتها.`}
+                                    {t('confirmDeleteBody', { name: service?.name || t('thisService') })}
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             
@@ -113,7 +112,7 @@ export default function ServiceActionsMenu({ service, onServiceDeleted, isOwner 
                                     disabled={isDeleting}
                                     className="rounded-xl text-sm font-medium border-gray-200 hover:bg-gray-50 px-4 h-10 transition-colors"
                                 >
-                                    {language === 'en' ? 'Cancel' : 'إلغاء الأمر'}
+                                    {t('cancelBtn')}
                                 </AlertDialogCancel>
                                 
                                 <AlertDialogAction 
@@ -124,10 +123,10 @@ export default function ServiceActionsMenu({ service, onServiceDeleted, isOwner 
                                     {isDeleting ? (
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin" />
-                                            <span>{language === 'en' ? 'Deleting...' : 'جاري الحذف...'}</span>
+                                            <span>{t('deleting')}</span>
                                         </>
                                     ) : (
-                                        <span>{language === 'en' ? 'Yes, delete now' : 'نعم، احذف الآن'}</span>
+                                        <span>{t('deleteNow')}</span>
                                     )}
                                 </AlertDialogAction>
                             </AlertDialogFooter>

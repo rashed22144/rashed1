@@ -67,7 +67,7 @@ export default function CommentItem({ comment, currentUser, depth = 0, allCommen
             if (currentReports.includes(userEmail)) { setReported(true); return; }
             await backend.entities.PostComment.update(comment.id, {
                 reports: [...currentReports, userEmail],
-                report_reasons: [...(comment.report_reasons || []), (language === 'ar' ? 'إبلاغ من مستخدم' : 'User report')],
+                report_reasons: [...(comment.report_reasons || []), t('userReportReason')],
             });
             setReported(true);
         } catch (error) {
@@ -135,7 +135,7 @@ export default function CommentItem({ comment, currentUser, depth = 0, allCommen
         <div 
             className={`animate-in fade-in duration-200 ${
                 depth > 0 
-                ? (dir === 'rtl' ? 'mr-4 pr-3 border-r border-gray-100' : 'ml-4 pl-3 border-l border-gray-100') 
+                ? 'ms-4 ps-3 border-s border-gray-100' 
                 : ''
             }`} 
             dir={dir}
@@ -166,7 +166,7 @@ export default function CommentItem({ comment, currentUser, depth = 0, allCommen
                                     
                                     {showDeleteConfirm ? (
                                         <div className="flex items-center gap-1.5 bg-white border border-red-100 rounded-lg px-1.5 py-0.5 shadow-xs animate-in zoom-in-95 duration-100">
-                                            <span className="text-[10px] font-bold text-red-500">{language === 'ar' ? 'حذف؟' : 'Delete?'}</span>
+                                            <span className="text-[10px] font-bold text-red-500">{t('deleteConfirmQ')}</span>
                                             <button onClick={handleDelete} className="text-[10px] font-bold text-red-600 hover:scale-110 transition-transform">✓</button>
                                             <button onClick={() => setShowDeleteConfirm(false)} className="text-[10px] font-bold text-gray-400 hover:scale-110 transition-transform">✕</button>
                                         </div>
@@ -189,7 +189,7 @@ export default function CommentItem({ comment, currentUser, depth = 0, allCommen
                                     value={editText}
                                     onChange={e => setEditText(e.target.value)}
                                     onKeyDown={e => { if (e.key === 'Enter') handleEdit(); if (e.key === 'Escape') setIsEditing(false); }}
-                                    className="flex-1 bg-white border border-blue-200 rounded-xl px-3 py-1 text-xs focus:outline-none focus:border-blue-500 text-right"
+                                    className="flex-1 bg-white border border-blue-200 rounded-xl px-3 py-1 text-xs focus:outline-none focus:border-blue-500 text-start"
                                     autoFocus
                                 />
                                 <button onClick={handleEdit} disabled={submitting} className="p-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 shadow-xs">
@@ -201,10 +201,10 @@ export default function CommentItem({ comment, currentUser, depth = 0, allCommen
                             </div>
                         ) : (
                             <div className="mt-0.5">
-                                <p className="text-xs text-gray-700 leading-relaxed break-words text-right">{localContent}</p>
+                                <p className="text-xs text-gray-700 leading-relaxed break-words text-start">{localContent}</p>
                                 {wasEdited && (
                                     <p className="text-[10px] text-gray-400 mt-0.5 italic">
-                                        {language === 'ar' ? `• تم التعديل ${timeAgo(localUpdatedDate)}` : `• edited ${timeAgo(localUpdatedDate)}`}
+                                        {`• ${t('editedAgo', { time: timeAgo(localUpdatedDate) })}`}
                                     </p>
                                 )}
                             </div>
@@ -212,7 +212,7 @@ export default function CommentItem({ comment, currentUser, depth = 0, allCommen
                     </div>
 
                     {/* سطر التفاعلات والإجراءات سفلي الفقاعة */}
-                    <div className="flex items-center gap-3 mt-1 px-1 flex-wrap text-right">
+                    <div className="flex items-center gap-3 mt-1 px-1 flex-wrap text-start">
                         <span className="text-[10px] text-gray-400 font-medium">{timeAgo(comment.created_date)}</span>
 
                         <button 
@@ -240,14 +240,14 @@ export default function CommentItem({ comment, currentUser, depth = 0, allCommen
                                 className={`text-[11px] font-bold flex items-center gap-1 transition-colors ${showOwnerReply ? 'text-blue-600' : 'text-blue-500 hover:text-blue-600'}`}
                             >
                                 <MessageCircle className="w-3 h-3" />
-                                <span>{language === 'ar' ? 'رد كصاحب المنشور' : 'Reply as owner'}</span>
+                                <span>{t('replyAsOwner')}</span>
                             </button>
                         )}
 
                         {currentUser && !isCommentOwner && (
                             showReportConfirm ? (
                                 <div className="flex items-center gap-1 bg-orange-50 border border-orange-100 rounded-full px-2 py-0.5 shadow-xs animate-in zoom-in-95 duration-100">
-                                    <span className="text-[10px] font-bold text-orange-600">{language === 'ar' ? 'إبلاغ؟' : 'Report?'}</span>
+                                    <span className="text-[10px] font-bold text-orange-600">{t('reportConfirmQ')}</span>
                                     <button onClick={handleReport} className="text-[10px] font-bold text-orange-600">✓</button>
                                     <button onClick={() => setShowReportConfirm(false)} className="text-[10px] font-bold text-gray-400">✕</button>
                                 </div>
@@ -269,8 +269,8 @@ export default function CommentItem({ comment, currentUser, depth = 0, allCommen
                                 value={ownerReplyText} 
                                 onChange={e => setOwnerReplyText(e.target.value)} 
                                 onKeyDown={e => e.key === 'Enter' && submitOwnerReply()} 
-                                placeholder={language === 'ar' ? 'اكتب ردك كصاحب للمنشور...' : 'Reply as post owner...'} 
-                                className="flex-1 bg-blue-50/50 border border-blue-100 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-blue-400 text-right" 
+                                placeholder={t('replyAsOwnerPlaceholder')} 
+                                className="flex-1 bg-blue-50/50 border border-blue-100 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-blue-400 text-start" 
                                 autoFocus 
                             />
                             <button 
@@ -291,7 +291,7 @@ export default function CommentItem({ comment, currentUser, depth = 0, allCommen
                                 onChange={e => setReplyText(e.target.value)} 
                                 onKeyDown={e => e.key === 'Enter' && submitReply()} 
                                 placeholder={t('writeReply')} 
-                                className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-blue-400 text-right" 
+                                className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-blue-400 text-start" 
                                 autoFocus 
                             />
                             <button 

@@ -3,6 +3,9 @@ import { Image, Send, X, Megaphone, Plus, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useLanguage } from '@/lib/LanguageContext';
 import { backend } from '@/api/backendClient';
+import { isSafeHttpUrl } from '@/utils';
+import { validateImageFile } from '@/lib/imageUpload';
+import { getFriendlyErrorMessage } from '@/lib/friendlyError';
 
 export default function CreatePost({ currentUser, onPostCreated }) {
     const { t, dir, language } = useLanguage();
@@ -81,6 +84,8 @@ export default function CreatePost({ currentUser, onPostCreated }) {
         const file = e.target.files[0];
         if (!file) return;
         if (images.length >= maxImages) return;
+        const imageErrorKey = validateImageFile(file);
+        if (imageErrorKey) { alert(t(imageErrorKey)); e.target.value = ''; return; }
         
         setUploading(true);
         try {
@@ -90,8 +95,9 @@ export default function CreatePost({ currentUser, onPostCreated }) {
             // 2. رفع الملف المضغوط خفيف الحجم إلى السيرفر
             const { file_url } = await backend.integrations.Core.UploadFile({ file: compressedFile });
             setImages(prev => [...prev, file_url]);
-        } catch (e) { 
-            console.error(e); 
+        } catch (e) {
+            console.error(e);
+            alert(t('uploadFailed'));
         } finally {
             setUploading(false);
             e.target.value = '';
@@ -118,6 +124,7 @@ export default function CreatePost({ currentUser, onPostCreated }) {
             is_ad: isAdAccount && isAd,
         };
         if (isAdAccount && isAd && linkUrl.trim()) {
+            if (!isSafeHttpUrl(linkUrl.trim())) { alert(t('invalidAdLink')); setSubmitting(false); return; }
             postData.link_url = linkUrl.trim();
         }
         if (images.length === 1) {
@@ -132,8 +139,9 @@ export default function CreatePost({ currentUser, onPostCreated }) {
             setIsAd(false);
             setLinkUrl('');
             onPostCreated(post);
-        } catch (e) { 
-            console.error(e); 
+        } catch (e) {
+            console.error(e);
+            alert(getFriendlyErrorMessage(e, t));
         } finally {
             setSubmitting(false);
         }
@@ -147,12 +155,10 @@ export default function CreatePost({ currentUser, onPostCreated }) {
         return (
             <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center" dir={dir}>
                 <p className="text-sm font-bold text-red-700">
-                    {language === 'ar' ? '🚫 حسابك محظور مؤقتاً من النشر' : '🚫 Your account is temporarily banned from posting'}
+                    {'🚫 ' + t('bannedFromPosting')}
                 </p>
                 <p className="text-xs text-red-500 mt-1">
-                    {language === 'ar'
-                        ? `يمكنك التصفح فقط حتى ${new Date(currentUser.banned_until).toLocaleDateString('ar')}`
-                        : `You can browse only until ${new Date(currentUser.banned_until).toLocaleDateString('en-US')}`}
+                    {t('browseOnlyUntil', { date: new Date(currentUser.banned_until).toLocaleDateString(language === 'ar' ? 'ar' : 'en-US') })}
                 </p>
             </div>
         );
@@ -189,7 +195,7 @@ export default function CreatePost({ currentUser, onPostCreated }) {
                                 }`}
                             >
                                 <Megaphone className="w-3.5 h-3.5" />
-                                <span>{language === 'ar' ? 'نشر كإعلان' : 'Post as Ad'}</span>
+                                <span>{t('postAsAd')}</span>
                             </button>
                         </div>
                     )}
@@ -200,14 +206,12 @@ export default function CreatePost({ currentUser, onPostCreated }) {
                                 type="url"
                                 value={linkUrl}
                                 onChange={(e) => setLinkUrl(e.target.value)}
-                                placeholder={language === 'ar' ? 'رابط الإعلان (يفتح عند الضغط على الصورة)...' : 'Ad link (opens when the image is clicked)...'}
+                                placeholder={t('adLinkPlaceholder')}
                                 className="w-full text-xs border border-purple-200 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-400"
                                 dir="ltr"
                             />
                             <p className="text-[10px] text-gray-400 mt-1">
-                                {language === 'ar'
-                                    ? 'الرابط ما يظهر كنص أبداً — بس الصورة تصير قابلة للضغط وتوديك له'
-                                    : "The link never shows as text — only the image becomes clickable and opens it"}
+                                {t('adLinkHint')}
                             </p>
                         </div>
                     )}
@@ -237,7 +241,7 @@ export default function CreatePost({ currentUser, onPostCreated }) {
 
                     {images.length > 0 && (
                         <p className={`text-[11px] text-gray-400 mt-1.5 font-medium ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
-                            {images.length}/{maxImages} {language === 'ar' ? 'صور' : 'photos'}
+                            {images.length}/{maxImages} {t('photosLabel')}
                         </p>
                     )}
                 </div>
@@ -253,7 +257,7 @@ export default function CreatePost({ currentUser, onPostCreated }) {
                         )}
                         <span className="text-xs font-bold">
                             {uploading 
-                                ? (language === 'ar' ? 'جاري الرفع والضغط...' : 'Compressing & Uploading...') 
+                                ? t('compressingUploading')
                                 : images.length === 0 ? t('addPhoto') : t('addMorePhotos')
                             }
                         </span>
@@ -277,7 +281,7 @@ export default function CreatePost({ currentUser, onPostCreated }) {
                     )}
                     <span>
                         {submitting 
-                            ? (language === 'ar' ? 'جاري النشر...' : 'Publishing...') 
+                            ? t('publishing')
                             : t('publish')
                         }
                     </span>
