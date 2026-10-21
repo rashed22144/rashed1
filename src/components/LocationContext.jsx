@@ -20,7 +20,11 @@ export const LocationProvider = ({ children }) => {
 
     const updateLocation = (newLocation) => {
         setLocation(newLocation);
-        localStorage.setItem('userLocation', JSON.stringify(newLocation));
+        try {
+            localStorage.setItem('userLocation', JSON.stringify(newLocation));
+        } catch {
+            // Storage unavailable: keep the in-memory location only.
+        }
     };
 
     return (

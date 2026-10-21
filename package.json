@@ -21,6 +21,7 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
+    "check:i18n": "node scripts/check-i18n.js",
     "test": "craco test",
     "eject": "react-scripts eject"
   },
