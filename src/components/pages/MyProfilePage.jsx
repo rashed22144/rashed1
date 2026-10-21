@@ -9,6 +9,7 @@ import { Plus, Mail, Calendar, Briefcase, FileText, MessageSquare, Camera, Penci
 import ServiceCard from '../ServiceCard';
 import PostCard from '../community/PostCard';
 import { useLanguage } from '@/lib/LanguageContext';
+import { prepareImageForUpload } from '@/lib/imageUpload';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 
@@ -71,20 +72,36 @@ export default function MyProfilePage() {
         const file = e.target.files?.[0];
         if (!file) return;
         setUploadingAvatar(true);
-        const { file_url } = await backend.integrations.Core.UploadFile({ file });
-        await backend.auth.updateMe({ avatar_url: file_url });
-        setUser(prev => ({ ...prev, avatar_url: file_url }));
-        setUploadingAvatar(false);
+        try {
+            const prepared = await prepareImageForUpload(file, t);
+            const { file_url } = await backend.integrations.Core.UploadFile({ file: prepared });
+            await backend.auth.updateMe({ avatar_url: file_url });
+            setUser(prev => ({ ...prev, avatar_url: file_url }));
+        } catch (error) {
+            console.error(error);
+            alert([t('uploadInvalidType'), t('uploadTooLarge')].includes(error.message) ? error.message : t('uploadFailed'));
+        } finally {
+            setUploadingAvatar(false);
+            e.target.value = '';
+        }
     };
 
     const handleCoverUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
         setUploadingCover(true);
-        const { file_url } = await backend.integrations.Core.UploadFile({ file });
-        await backend.auth.updateMe({ cover_url: file_url });
-        setUser(prev => ({ ...prev, cover_url: file_url }));
-        setUploadingCover(false);
+        try {
+            const prepared = await prepareImageForUpload(file, t);
+            const { file_url } = await backend.integrations.Core.UploadFile({ file: prepared });
+            await backend.auth.updateMe({ cover_url: file_url });
+            setUser(prev => ({ ...prev, cover_url: file_url }));
+        } catch (error) {
+            console.error(error);
+            alert([t('uploadInvalidType'), t('uploadTooLarge')].includes(error.message) ? error.message : t('uploadFailed'));
+        } finally {
+            setUploadingCover(false);
+            e.target.value = '';
+        }
     };
 
     const handleServiceDeleted = (id) => setMyServices(prev => prev.filter(s => s.id !== id));
@@ -110,15 +127,15 @@ export default function MyProfilePage() {
 
     if (!user) return (
         <div className="text-center py-16">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">{language === 'ar' ? 'يجب تسجيل الدخول' : 'Please login first'}</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('loginFirst')}</h2>
         </div>
     );
 
     const tabs = [
-        { id: 'services', label: language === 'ar' ? 'الخدمات' : 'Services', icon: Briefcase, count: myServices.length },
-        { id: 'posts', label: language === 'ar' ? 'المنشورات' : 'Posts', icon: FileText, count: myPosts.length },
-        { id: 'comments', label: language === 'ar' ? 'التعليقات' : 'Comments', icon: MessageSquare, count: myComments.length },
-        { id: 'likes', label: language === 'ar' ? 'الإعجابات' : 'Likes', icon: ThumbsUp, count: likedPosts.length },
+        { id: 'services', label: t('servicesTab'), icon: Briefcase, count: myServices.length },
+        { id: 'posts', label: t('postsTab'), icon: FileText, count: myPosts.length },
+        { id: 'comments', label: t('commentsTab'), icon: MessageSquare, count: myComments.length },
+        { id: 'likes', label: t('likesTab'), icon: ThumbsUp, count: likedPosts.length },
     ];
 
     return (
@@ -137,7 +154,7 @@ export default function MyProfilePage() {
                         ) : (
                             <div className="flex items-center gap-2 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-medium">
                                 <Camera className="w-4 h-4" />
-                                {language === 'ar' ? 'تغيير الغلاف' : 'Change Cover'}
+                                {t('changeCover')}
                             </div>
                         )}
                     </div>
@@ -166,7 +183,7 @@ export default function MyProfilePage() {
                     <div className="mb-2 flex gap-2">
                         <Button asChild variant="outline" className="rounded-full px-5">
                             <Link to={createPageUrl('SettingsPage')}>
-                                <Pencil className="w-4 h-4 me-1" />{language === 'ar' ? 'تعديل الملف الشخصي' : 'Edit Profile'}
+                                <Pencil className="w-4 h-4 me-1" />{t('editProfile')}
                             </Link>
                         </Button>
                         <Button asChild className="bg-blue-600 hover:bg-blue-700 rounded-full px-5">
@@ -190,10 +207,10 @@ export default function MyProfilePage() {
                 </div>
                 <div className="flex flex-wrap gap-6 mt-4">
                     {[
-                        { val: myServices.length, label: language === 'ar' ? 'الخدمات' : 'Services' },
-                        { val: myPosts.length, label: language === 'ar' ? 'المنشورات' : 'Posts' },
-                        { val: myComments.length, label: language === 'ar' ? 'التعليقات' : 'Comments' },
-                        { val: likedPosts.length, label: language === 'ar' ? 'الإعجابات' : 'Likes' },
+                        { val: myServices.length, label: t('servicesTab') },
+                        { val: myPosts.length, label: t('postsTab') },
+                        { val: myComments.length, label: t('commentsTab') },
+                        { val: likedPosts.length, label: t('likesTab') },
                     ].map(item => (
                         <div key={item.label} className="text-center">
                             <p className="text-xl font-bold text-gray-900">{item.val}</p>
@@ -232,7 +249,7 @@ export default function MyProfilePage() {
                             {myServices.map(s => <ServiceCard key={s.id} service={s} showActions currentUser={user} onServiceDeleted={handleServiceDeleted} />)}
                         </div>
                     ) : (
-                        <EmptyState icon={Briefcase} label={language === 'ar' ? 'لا توجد خدمات بعد' : 'No services yet'} action={
+                        <EmptyState icon={Briefcase} label={t('noServicesYetProfile')} action={
                             <Button asChild className="bg-blue-600 hover:bg-blue-700 rounded-full">
                                 <Link to={createPageUrl('AddServicePage')}><Plus className="w-4 h-4 me-1" />{t('addService')}</Link>
                             </Button>
@@ -244,7 +261,7 @@ export default function MyProfilePage() {
                     myPosts.length > 0 ? (
                         myPosts.map(post => <PostCard key={post.id} post={post} currentUser={user} onUpdate={handlePostUpdate} onDelete={handlePostDelete} followData={[]} />)
                     ) : (
-                        <EmptyState icon={FileText} label={language === 'ar' ? 'لا توجد منشورات بعد' : 'No posts yet'} action={
+                        <EmptyState icon={FileText} label={t('noPostsYet')} action={
                             <Button asChild className="bg-blue-600 hover:bg-blue-700 rounded-full">
                                 <Link to={createPageUrl('CommunityPage')}>{t('community')}</Link>
                             </Button>
@@ -256,11 +273,11 @@ export default function MyProfilePage() {
                     myComments.length > 0 ? (
                         <div className="space-y-3">
                             {myComments.map(c => (
-                                <CommentCard key={c.id} comment={c} post={commentsPostsMap[c.post_id]} language={language} timeAgo={timeAgo} user={user} onDelete={(id) => setMyComments(prev => prev.filter(x => x.id !== id))} />
+                                <CommentCard key={c.id} comment={c} post={commentsPostsMap[c.post_id]} language={language} timeAgo={timeAgo} user={user} t={t} onDelete={(id) => setMyComments(prev => prev.filter(x => x.id !== id))} />
                             ))}
                         </div>
                     ) : (
-                        <EmptyState icon={MessageSquare} label={language === 'ar' ? 'لا توجد تعليقات بعد' : 'No comments yet'} />
+                        <EmptyState icon={MessageSquare} label={t('noCommentsYet')} />
                     )
                 )}
 
@@ -272,7 +289,7 @@ export default function MyProfilePage() {
                             ))}
                         </div>
                     ) : (
-                        <EmptyState icon={ThumbsUp} label={language === 'ar' ? 'لم تعجب بأي منشور بعد' : 'No liked posts yet'} />
+                        <EmptyState icon={ThumbsUp} label={t('noLikedPostsYet')} />
                     )
                 )}
             </div>
@@ -280,7 +297,7 @@ export default function MyProfilePage() {
     );
 }
 
-function CommentCard({ comment, post, language, timeAgo, user, onDelete }) {
+function CommentCard({ comment, post, language, timeAgo, user, onDelete, t }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(comment.content);
     const [localContent, setLocalContent] = useState(comment.content);
@@ -312,13 +329,13 @@ function CommentCard({ comment, post, language, timeAgo, user, onDelete }) {
                 <div className="mb-3 pb-3 border-b border-gray-100">
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <span className="text-xs font-bold text-gray-700">
-                            {language === 'ar' ? `على منشور ${post.author_name || ''}` : `On ${post.author_name || ''}'s post`}
+                            {t('onPostOf', { name: post.author_name || '' })}
                         </span>
                         <Link
                             to={createPageUrl('CommunityPage') + `?post=${post.id}`}
                             className="flex items-center gap-1 text-[11px] text-blue-600 font-bold hover:underline shrink-0"
                         >
-                            {language === 'ar' ? 'فتح بالمجتمع' : 'Open in feed'}
+                            {t('openInFeed')}
                             <ArrowUpRight className="w-3 h-3" />
                         </Link>
                     </div>
@@ -338,7 +355,7 @@ function CommentCard({ comment, post, language, timeAgo, user, onDelete }) {
             ) : (
                 <div className="mb-3 pb-3 border-b border-gray-50">
                     <span className="text-[11px] text-amber-600 font-medium">
-                        {language === 'ar' ? '⚠️ المنشور الأصلي محذوف أو غير متاح' : '⚠️ Original post unavailable'}
+                        {'⚠️ ' + t('originalPostUnavailable')}
                     </span>
                 </div>
             )}
@@ -365,7 +382,7 @@ function CommentCard({ comment, post, language, timeAgo, user, onDelete }) {
                         </button>
                         {showDeleteConfirm ? (
                             <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
-                                <span className="text-xs text-red-500">{language === 'ar' ? 'حذف؟' : 'Del?'}</span>
+                                <span className="text-xs text-red-500">{t('deleteConfirmQ')}</span>
                                 <button onClick={handleDelete} className="text-xs font-bold text-red-600">✓</button>
                                 <button onClick={() => setShowDeleteConfirm(false)} className="text-xs text-gray-400">✕</button>
                             </div>
@@ -379,7 +396,7 @@ function CommentCard({ comment, post, language, timeAgo, user, onDelete }) {
             </div>
             <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
                 <span>{timeAgo(comment.created_date)}</span>
-                {wasEdited && <span className="italic">{language === 'ar' ? `• تم التعديل ${timeAgo(localUpdated)}` : `• edited ${timeAgo(localUpdated)}`}</span>}
+                {wasEdited && <span className="italic">{`• ${t('editedAgo', { time: timeAgo(localUpdated) })}`}</span>}
             </div>
         </div>
     );

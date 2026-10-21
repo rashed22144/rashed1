@@ -12,13 +12,13 @@ import { useLanguage } from '@/lib/LanguageContext';
 
 export default function CategoryPage() {
     const { location, isLoading: isLocationLoading } = useContext(LocationContext);
-    const { language, dir } = useLanguage();
+    const { t, language, dir } = useLanguage();
 
     const ageFilters = [
-        { value: 'all', label: language === 'ar' ? 'الكل' : 'All', icon: Users },
-        { value: 'men', label: language === 'ar' ? 'رجالي' : 'Men', icon: User },
-        { value: 'women', label: language === 'ar' ? 'نسائي' : 'Women', icon: PersonStanding },
-        { value: 'children', label: language === 'ar' ? 'أطفال' : 'Children', icon: Baby },
+        { value: 'all', label: t('filterAll'), icon: Users },
+        { value: 'men', label: t('ageMen'), icon: User },
+        { value: 'women', label: t('ageWomen'), icon: PersonStanding },
+        { value: 'children', label: t('ageChildren'), icon: Baby },
     ];
     const [services, setServices] = useState([]);
     const [categoryInfo, setCategoryInfo] = useState(null);
@@ -86,12 +86,10 @@ export default function CategoryPage() {
              <div className="text-center py-20 bg-white rounded-2xl shadow-lg" dir={dir}>
                 <MapPin className="mx-auto h-16 w-16 text-blue-500 mb-6" />
                 <h1 className="text-3xl font-bold text-gray-800 mb-4">
-                    {language === 'ar' ? 'يرجى تحديد موقعك أولاً' : 'Please select your location first'}
+                    {t('selectLocationFirst')}
                 </h1>
                 <p className="text-lg text-gray-600">
-                    {language === 'ar'
-                        ? 'لا يمكن عرض الخدمات في هذا القسم قبل تحديد موقعك.'
-                        : 'Services in this category cannot be shown before you select your location.'}
+                    {t('selectLocationFirstDesc')}
                 </p>
             </div>
         );
@@ -101,16 +99,10 @@ export default function CategoryPage() {
         <div dir={dir}>
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-extrabold text-gray-900 mb-4">
-                    {language === 'ar' ? (
-                        <>قسم {displayCategoryName} في <span className="text-blue-600">{location.city}</span></>
-                    ) : (
-                        <>{displayCategoryName} in <span className="text-blue-600">{location.city}</span></>
-                    )}
+                    {t('categoryHeadingIn', { category: displayCategoryName })} <span className="text-blue-600">{location.city}</span>
                 </h1>
                 <p className="text-gray-600 text-lg">
-                    {language === 'ar'
-                        ? `اكتشف أفضل مقدمي الخدمات في ${displayCategoryName}`
-                        : `Discover the best service providers in ${displayCategoryName}`}
+                    {t('discoverProvidersIn', { category: displayCategoryName })}
                 </p>
             </div>
 
@@ -129,7 +121,7 @@ export default function CategoryPage() {
                                     : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                                 }`}
                             >
-                                <Icon className="w-5 h-5 ml-2" />
+                                <Icon className="w-5 h-5 me-2" />
                                 {filter.label}
                             </Button>
                         )
@@ -152,16 +144,14 @@ export default function CategoryPage() {
                             </svg>
                         </div>
                         <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                            {language === 'ar' ? 'لا توجد خدمات بعد' : 'No services yet'}
+                            {t('noServicesYet')}
                         </h2>
                         <p className="text-gray-600 mb-8">
-                            {language === 'ar'
-                                ? `كن أول من يضيف خدمة في قسم "${displayCategoryName}" في مدينة ${location.city}.`
-                                : `Be the first to add a service in "${displayCategoryName}" in ${location.city}.`}
+                            {t('beFirstAddService', { category: displayCategoryName, city: location.city })}
                         </p>
                         <Button asChild size="lg" className="bg-gradient-to-r from-blue-600 to-blue-800">
                             <Link to={createPageUrl("AddServicePage")}>
-                                {language === 'ar' ? 'أضف خدمتك الآن' : 'Add your service now'}
+                                {t('addYourServiceNow')}
                             </Link>
                         </Button>
                     </div>

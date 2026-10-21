@@ -123,9 +123,7 @@ function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFo
 
         const myTopLevelCount = comments.filter(c => !c.parent_comment_id && c.author_email === currentUser.email).length;
         if (myTopLevelCount >= MAX_COMMENTS_PER_USER) {
-            alert(language === 'ar'
-                ? t('commentLimitReached', { max: MAX_COMMENTS_PER_USER })
-                : t('commentLimitReached', { max: MAX_COMMENTS_PER_USER }));
+            alert(t('commentLimitReached', { max: MAX_COMMENTS_PER_USER }));
             return;
         }
 

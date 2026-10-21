@@ -237,7 +237,6 @@ const en = {
     selectLocationFirst: 'Please select your location first',
     selectLocationFirstDesc: 'Services in this category cannot be shown before you select your location.',
     categoryHeadingIn: '{category} in',
-    sectionHeadingIn: 'Section {category} in',
     discoverProvidersIn: 'Discover the best service providers in {category}',
     noServicesYet: 'No services yet',
     beFirstAddService: 'Be the first to add a service in "{category}" in {city}.',

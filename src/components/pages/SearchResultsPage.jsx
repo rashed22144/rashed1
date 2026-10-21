@@ -13,7 +13,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 
 export default function SearchResultsPage() {
     const { location, isLoading: isLocationLoading } = useContext(LocationContext);
-    const { language, dir } = useLanguage();
+    const { t, language, dir } = useLanguage();
     const [services, setServices] = useState([]);
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -90,7 +90,7 @@ export default function SearchResultsPage() {
             <div className="bg-white p-6 rounded-xl shadow-sm border">
                 <SearchBar 
                     onSearch={handleNewSearch}
-                    placeholder={language === 'ar' ? 'ابحث عن الخدمات بالاسم أو الوصف أو مقدم الخدمة...' : 'Search services by name, description, or provider...'}
+                    placeholder={t('searchByPlaceholder')}
                     initialValue={searchTerm}
                 />
             </div>
@@ -100,12 +100,10 @@ export default function SearchResultsPage() {
                     <div className="flex items-center gap-3">
                         <Search className="w-6 h-6 text-blue-600" />
                         <h1 className="text-2xl font-bold text-gray-900">
-{searchTerm
-                                ? (language === 'ar' ? `نتائج البحث عن "${searchTerm}"` : `Search results for "${searchTerm}"`)
-                                : (language === 'ar' ? 'نتائج البحث' : 'Search results')}
+{searchTerm ? t('searchResultsFor', { query: searchTerm }) : t('searchResultsTitle')}
                             {location && (
                                 <span className="text-lg text-gray-500">
-                                    {' '}{language === 'ar' ? `في ${location.city}` : `in ${location.city}`}
+                                    {' '}{t('inCity', { city: location.city })}
                                 </span>
                             )}
                         </h1>
@@ -113,7 +111,7 @@ export default function SearchResultsPage() {
                     
                     {!isLoading && !isLocationLoading && (
                         <Badge variant="outline" className="text-lg px-4 py-2">
-                            {services.length} {language === 'ar' ? 'نتيجة' : 'results'}
+                            {services.length} {t('resultsLabel')}
                         </Badge>
                     )}
                 </div>
@@ -134,10 +132,10 @@ export default function SearchResultsPage() {
                         <CardContent>
                             <MapPin className="mx-auto h-16 w-16 text-blue-500 mb-6" />
 <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                                {language === 'ar' ? 'يرجى تحديد موقعك' : 'Please select your location'}
+                                {t('selectLocationTitle')}
                             </h2>
                             <p className="text-gray-600 mb-6">
-                                {language === 'ar' ? 'يجب تحديد موقعك أولاً قبل إجراء البحث عن الخدمات.' : 'You must select your location before searching for services.'}
+                                {t('selectLocationBeforeSearch')}
                             </p>
                         </CardContent>
                     </Card>
@@ -156,15 +154,10 @@ export default function SearchResultsPage() {
                         <CardContent>
                             <Search className="mx-auto h-16 w-16 text-gray-400 mb-6" />
 <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                                {language === 'ar' ? 'لم نجد أي نتائج' : 'No results found'}
+                                {t('noResultsTitle')}
                             </h2>
                             <p className="text-gray-600 mb-6">
-                                {searchTerm
-                                    ? (language === 'ar'
-                                        ? `لم نجد أي خدمات تطابق "${searchTerm}" في ${location.city}. جرب كلمات مفتاحية أخرى.`
-                                        : `We couldn't find any services matching "${searchTerm}" in ${location.city}. Try different keywords.`)
-                                    : (language === 'ar' ? 'يرجى إدخال كلمة أو عبارة للبحث.' : 'Please enter a word or phrase to search.')
-                                }
+                                {searchTerm ? t('noResultsForQuery', { query: searchTerm, city: location.city }) : t('enterSearchTerm')}
                             </p>
                         </CardContent>
                     </Card>

@@ -128,15 +128,15 @@ export default function UserProfilePage() {
     );
 
     if (!profileUser) return (
-        <div className="text-center py-20 text-gray-500">{language === 'ar' ? 'المستخدم غير موجود' : 'User not found'}</div>
+        <div className="text-center py-20 text-gray-500">{t('userNotFound')}</div>
     );
 
     const tabs = [
-        { id: 'posts', label: language === 'ar' ? 'المنشورات' : 'Posts', icon: FileText, count: posts.length },
-        { id: 'media', label: language === 'ar' ? 'الصور' : 'Photos', icon: Image, count: posts.filter(p => p.image_url).length },
-        { id: 'comments', label: language === 'ar' ? 'التعليقات' : 'Comments', icon: MessageCircle, count: userComments.length },
-        { id: 'services', label: language === 'ar' ? 'الخدمات' : 'Services', icon: Briefcase, count: services.length },
-        { id: 'likes', label: language === 'ar' ? 'الإعجابات' : 'Likes', icon: ThumbsUp, count: likedPosts.length },
+        { id: 'posts', label: t('postsTab'), icon: FileText, count: posts.length },
+        { id: 'media', label: t('photosTab'), icon: Image, count: posts.filter(p => p.image_url).length },
+        { id: 'comments', label: t('commentsTab'), icon: MessageCircle, count: userComments.length },
+        { id: 'services', label: t('servicesTab'), icon: Briefcase, count: services.length },
+        { id: 'likes', label: t('likesTab'), icon: ThumbsUp, count: likedPosts.length },
     ];
 
     const avatarColors = ['from-blue-500 to-indigo-600', 'from-violet-500 to-purple-600', 'from-green-500 to-teal-600', 'from-orange-400 to-rose-500'];
@@ -187,14 +187,14 @@ export default function UserProfilePage() {
                     {profileUser.account_type === 'vip' && <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />}
                     {profileUser.account_type === 'ad' && <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">AD</span>}
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{profileEmail}</p>
+                {isOwnProfile && <p className="text-sm text-gray-500 mt-1">{profileEmail}</p>}
                 {profileUser.bio && <p className="text-sm text-gray-700 mt-2">{profileUser.bio}</p>}
                 <div className="flex gap-6 mt-4 flex-wrap">
                     {[
                         { val: followersCount, label: t('followers') },
                         { val: followingCount, label: t('following') },
-                        { val: posts.length, label: language === 'ar' ? 'المنشورات' : 'Posts' },
-                        { val: services.length, label: language === 'ar' ? 'الخدمات' : 'Services' },
+                        { val: posts.length, label: t('postsTab') },
+                        { val: services.length, label: t('servicesTab') },
                     ].map(item => (
                         <div key={item.label} className="text-center">
                             <p className="text-xl font-bold text-gray-900">{item.val}</p>
@@ -244,7 +244,7 @@ export default function UserProfilePage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-16 text-gray-400">{language === 'ar' ? 'لا توجد صور بعد' : 'No photos yet'}</div>
+                        <div className="text-center py-16 text-gray-400">{t('noPhotosYet')}</div>
                     );
                 })()}
 
@@ -269,7 +269,7 @@ export default function UserProfilePage() {
                                                         <p className="text-xs text-gray-400">{timeAgo(post.created_date)}</p>
                                                     </div>
                                                     <div className="flex items-center gap-1 text-xs text-blue-600 font-medium flex-shrink-0">
-                                                        {language === 'ar' ? 'عرض المنشور' : 'View post'}
+                                                        {t('viewPost')}
                                                         <ArrowUpRight className="w-3.5 h-3.5" />
                                                     </div>
                                                 </div>
@@ -297,7 +297,7 @@ export default function UserProfilePage() {
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="text-xs font-semibold text-blue-600">
-                                                            {language === 'ar' ? 'تعليقك' : 'Your comment'}
+                                                            {t('yourCommentLabel')}
                                                         </span>
                                                         <span className="text-xs text-gray-400">• {timeAgo(comment.created_date)}</span>
                                                     </div>
@@ -310,7 +310,7 @@ export default function UserProfilePage() {
                             })}
                         </div>
                     ) : (
-                        <div className="text-center py-16 text-gray-400">{language === 'ar' ? 'لا توجد تعليقات بعد' : 'No comments yet'}</div>
+                        <div className="text-center py-16 text-gray-400">{t('noCommentsYet')}</div>
                     )
                 )}
 
@@ -320,7 +320,7 @@ export default function UserProfilePage() {
                             {services.map(s => <ServiceCard key={s.id} service={s} currentUser={currentUser} />)}
                         </div>
                     ) : (
-                        <div className="text-center py-16 text-gray-400">{language === 'ar' ? 'لا توجد خدمات' : 'No services'}</div>
+                        <div className="text-center py-16 text-gray-400">{t('noServices')}</div>
                     )
                 )}
 
@@ -332,7 +332,7 @@ export default function UserProfilePage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-16 text-gray-400">{language === 'ar' ? 'لا توجد إعجابات بعد' : 'No likes yet'}</div>
+                        <div className="text-center py-16 text-gray-400">{t('noLikesYet')}</div>
                     )
                 )}
             </div>

@@ -71,9 +71,7 @@ export default function ServiceReviews({ serviceId, serviceOwnerEmail }) {
             recipient_email: serviceOwnerEmail,
             type: 'review',
             title: t('newReviewNotifTitle'),
-            message: language === 'ar'
-              ? t('newReviewNotifMsg', { name: newReview.reviewer_name || t('someoneName'), rating: newReview.rating })
-              : t('newReviewNotifMsg', { name: newReview.reviewer_name || t('someoneName'), rating: newReview.rating }),
+            message: t('newReviewNotifMsg', { name: newReview.reviewer_name || t('someoneName'), rating: newReview.rating }),
             related_id: String(serviceId),
             link: `/ServiceDetailPage?id=${serviceId}`,
           });

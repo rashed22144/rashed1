@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, GraduationCap, Wrench, Paintbrush, HeartPulse, Briefcase, PartyPopper, Tag, Crown, ChevronLeft, Shirt, Package, Gamepad2, UtensilsCrossed, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, GraduationCap, Wrench, Paintbrush, HeartPulse, Briefcase, PartyPopper, Tag, Crown, ChevronLeft, ChevronRight, Shirt, Package, Gamepad2, UtensilsCrossed, MapPin } from 'lucide-react';
 import ServiceCard from '../ServiceCard';
 import { LocationContext } from '../LocationContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -137,7 +137,7 @@ export default function HomePage() {
                     {user ? (
                         <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-bold text-base md:text-lg px-6 py-4 md:py-6" asChild>
                             <Link to={createPageUrl("AddServicePage")}>
-                                {t('addServiceNow')} <ArrowLeft className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                                {t('addServiceNow')} {dir === 'rtl' ? <ArrowLeft className="me-2 h-4 w-4 md:h-5 md:w-5" /> : <ArrowRight className="me-2 h-4 w-4 md:h-5 md:w-5" />}
                             </Link>
                         </Button>
                     ) : (
@@ -201,7 +201,7 @@ export default function HomePage() {
                                     to={createPageUrl('CategoryPage?name=' + encodeURIComponent(category.name))}
                                     className="flex-shrink-0 flex items-center gap-1 text-blue-600 text-sm font-semibold hover:underline"
                                 >
-                                    {t('viewAll')} <ChevronLeft className="w-4 h-4" />
+                                    {t('viewAll')} {dir === 'rtl' ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                                 </Link>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">

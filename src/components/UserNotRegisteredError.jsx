@@ -5,7 +5,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { backend } from '@/api/backendClient';
 
 export default function UserNotRegisteredError() {
-  const { t, dir, language } = useLanguage();
+  const { t, dir } = useLanguage();
 
   const handleLogout = async () => {
     try {
@@ -38,29 +38,27 @@ export default function UserNotRegisteredError() {
         
         {/* العناوين المترجمة */}
         <h1 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">
-          {language === 'ar' ? 'الدخول غير مصرح به' : 'Access Restricted'}
+          {t('accessRestricted')}
         </h1>
         
         <p className="text-sm text-gray-500 leading-relaxed mb-6 px-2">
-          {language === 'ar' 
-            ? 'حسابك الحالي غير مسجل في النظام لاستخدام هذا التطبيق. يرجى التأكد من تسجيل الدخول بالحساب الصحيح أو التواصل مع الإدارة.' 
-            : 'Your account is not registered to use this application. Please verify your credentials or contact the administrator.'}
+          {t('notRegisteredDesc')}
         </p>
         
         {/* صندوق النصائح والإرشادات */}
-        <div className="p-4 bg-slate-50/80 rounded-xl text-right border border-gray-100 text-xs sm:text-sm text-gray-600 mb-6">
+        <div className="p-4 bg-slate-50/80 rounded-xl text-start border border-gray-100 text-xs sm:text-sm text-gray-600 mb-6">
           <p className="font-bold text-gray-800 mb-2 border-b border-gray-200/60 pb-1.5">
-            {language === 'ar' ? 'حلول مقترحة لحل المشكلة:' : 'Suggested steps to resolve this:'}
+            {t('suggestedSteps')}
           </p>
-          <ul className={`list-disc list-inside space-y-1.5 text-gray-500 ${language === 'ar' ? 'pr-1' : 'pl-1'}`} dir={dir}>
+          <ul className="list-disc list-inside space-y-1.5 text-gray-500 ps-1" dir={dir}>
             <li>
-              {language === 'ar' ? 'تأكد من استخدام بريدك الجامعي الرسمي المتوافق.' : 'Verify you are using your official email account.'}
+              {t('stepOfficialEmail')}
             </li>
             <li>
-              {language === 'ar' ? 'قم بتسجيل الخروج وإعادة الدخول لتحديث الصلاحيات.' : 'Try logging out and logging back in again.'}
+              {t('stepRelogin')}
             </li>
             <li>
-              {language === 'ar' ? 'تواصل مع الدعم الفني لتفعيل حسابك يدويياً.' : 'Contact the app administrator to request access.'}
+              {t('stepContactAdmin')}
             </li>
           </ul>
         </div>
@@ -74,7 +72,7 @@ export default function UserNotRegisteredError() {
               className="rounded-xl border-gray-200 text-xs font-bold text-gray-700 h-10 hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-all active:scale-95"
             >
               <RefreshCw className="w-3.5 h-3.5 text-gray-500" />
-              <span>{language === 'ar' ? 'تحديث الصفحة' : 'Reload'}</span>
+              <span>{t('reloadPage')}</span>
             </Button>
 
             <Button 
@@ -83,7 +81,7 @@ export default function UserNotRegisteredError() {
               className="bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold h-10 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>{language === 'ar' ? 'تبديل الحساب' : 'Switch Account'}</span>
+              <span>{t('switchAccount')}</span>
             </Button>
           </div>
 
@@ -92,7 +90,7 @@ export default function UserNotRegisteredError() {
             className="w-full h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
           >
             <Mail className="w-3.5 h-3.5 text-slate-500" />
-            <span>{language === 'ar' ? 'مراسلة الدعم الفني' : 'Contact Support'}</span>
+            <span>{t('contactSupport')}</span>
           </a>
         </div>
 
