@@ -344,6 +344,11 @@ const en = {
     reloadPage: 'Reload',
     switchAccount: 'Switch Account',
     contactSupport: 'Contact Support',
+    closeBtn: 'Close',
+    prevBtn: 'Previous image',
+    nextBtn: 'Next image',
+    galleryImageAlt: 'Post image {index}',
+    fullImageAlt: 'Full size image',
     // Friendly errors for database rejections
     errPermission: 'You do not have permission to do this.',
     errBanned: 'Your account is temporarily banned from this action.',

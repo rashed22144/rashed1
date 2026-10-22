@@ -247,7 +247,7 @@ export default function ServiceDetailPage() {
             <div className="flex flex-wrap gap-3">
               {service.has_phone && (
                 <button
-                  onClick={() => handleContactAction('phone', (value) => { window.location.href = 'tel:' + value; })}
+                  onClick={() => handleContactAction('phone', (value) => { window.location.href = 'tel:' + String(value).replace(/[^\d+]/g, ''); })}
                   disabled={actingOn === 'phone'}
                   className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-5 py-3 rounded-xl font-medium transition-colors disabled:opacity-60"
                 >
@@ -269,7 +269,7 @@ export default function ServiceDetailPage() {
               )}
               {service.has_email && (
                 <button
-                  onClick={() => handleContactAction('email', (value) => { window.location.href = 'mailto:' + value; })}
+                  onClick={() => handleContactAction('email', (value) => { window.location.href = 'mailto:' + encodeURIComponent(String(value).trim()); })}
                   disabled={actingOn === 'email'}
                   className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 px-5 py-3 rounded-xl font-medium transition-colors disabled:opacity-60"
                 >

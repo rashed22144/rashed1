@@ -80,11 +80,11 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
         if (!value) return;
 
         if (contactType === 'call') {
-            window.location.href = 'tel:' + value;
+            window.location.href = 'tel:' + String(value).replace(/[^\d+]/g, '');
         } else if (contactType === 'whatsapp') {
             window.open('https://wa.me/' + toWhatsAppNumber(value), '_blank', 'noopener,noreferrer');
         } else if (contactType === 'email') {
-            window.location.href = 'mailto:' + value;
+            window.location.href = 'mailto:' + encodeURIComponent(String(value).trim());
         }
     };
 

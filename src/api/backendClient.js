@@ -125,9 +125,14 @@ const auth = {
     async updateMe(payload) {
         const { data: { user }, error } = await supabase.auth.getUser();
         if (error || !user) throw new Error('User not logged in');
+        // Defense in depth: self-service profile updates may only touch editable fields.
+        // Protected columns (account_type, warnings, banned_until, email, id) are stripped even if a caller passes them.
+        const PROFILE_FIELDS = ['full_name', 'phone', 'bio', 'avatar_url', 'cover_url', 'notifications_enabled', 'email_notifications', 'marketing_emails'];
+        const safePayload = {};
+        PROFILE_FIELDS.forEach((field) => { if (payload?.[field] !== undefined) safePayload[field] = payload[field]; });
         const { data, error: updateError } = await supabase
             .from('users')
-            .update(payload)
+            .update(safePayload)
             .eq('email', user.email)
             .select()
             .single();

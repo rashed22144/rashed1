@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { safeHttpUrl } from '@/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function PostImageGallery({ images = [], isAd = false, linkUrl = null }) {
+    const { t, dir } = useLanguage();
     const [lightboxIndex, setLightboxIndex] = useState(null);
 
     if (!images || images.length === 0) return null;
@@ -53,7 +55,7 @@ export default function PostImageGallery({ images = [], isAd = false, linkUrl = 
                             {/* تم إضافة "تحسين الأداء" عبر loading="lazy" لتقليل استهلاك البيانات */}
                             <img
                                 src={img}
-                                alt={`post-${i}`}
+                                alt={t('galleryImageAlt', { index: i + 1 })}
                                 loading="lazy" 
                                 className={`w-full ${heightClass} object-cover transition-transform duration-500 group-hover:scale-105`}
                                 style={{ imageRendering: 'high-quality' }} 
@@ -72,17 +74,17 @@ export default function PostImageGallery({ images = [], isAd = false, linkUrl = 
             {/* وضع ملء الشاشة (Lightbox) */}
             {lightboxIndex !== null && (
                 <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={closeLightbox}>
-                    <button onClick={closeLightbox} className="absolute top-5 right-5 text-white p-2 hover:bg-white/10 rounded-full z-50">
+                    <button type="button" aria-label={t('closeBtn')} onClick={closeLightbox} className="absolute top-5 end-5 text-white p-2 hover:bg-white/10 rounded-full z-50">
                         <X className="w-8 h-8" />
                     </button>
 
                     {images.length > 1 && (
                         <>
-                            <button onClick={prevImage} className="absolute left-4 text-white p-3 hover:bg-white/10 rounded-full z-50">
-                                <ChevronLeft className="w-8 h-8" />
+                            <button type="button" aria-label={t('prevBtn')} onClick={prevImage} className="absolute start-4 text-white p-3 hover:bg-white/10 rounded-full z-50">
+                                {dir === 'rtl' ? <ChevronRight className="w-8 h-8" /> : <ChevronLeft className="w-8 h-8" />}
                             </button>
-                            <button onClick={nextImage} className="absolute right-4 text-white p-3 hover:bg-white/10 rounded-full z-50">
-                                <ChevronRight className="w-8 h-8" />
+                            <button type="button" aria-label={t('nextBtn')} onClick={nextImage} className="absolute end-4 text-white p-3 hover:bg-white/10 rounded-full z-50">
+                                {dir === 'rtl' ? <ChevronLeft className="w-8 h-8" /> : <ChevronRight className="w-8 h-8" />}
                             </button>
                         </>
                     )}
@@ -91,7 +93,7 @@ export default function PostImageGallery({ images = [], isAd = false, linkUrl = 
                         src={images[lightboxIndex]}
                         className="max-w-[95vw] max-h-[90vh] object-contain"
                         onClick={e => e.stopPropagation()}
-                        alt="full"
+                        alt={t('fullImageAlt')}
                     />
                     
                     <div className="absolute bottom-5 text-white text-sm bg-black/50 px-4 py-1 rounded-full">

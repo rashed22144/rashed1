@@ -39,7 +39,7 @@ export default function UserProfilePage() {
             try { me = await backend.auth.me(); setCurrentUser(me); } catch {}
 
             const [allUsers, postsData, servicesData, followersData, followingData, allPosts, allComments] = await Promise.all([
-                backend.entities.User.list(),
+                backend.entities.User.filter({ email: profileEmail }),
                 backend.entities.Post.filter({ author_email: profileEmail }),
                 ServicePublic.filter({ created_by: profileEmail }),
                 backend.entities.Follow.filter({ following_email: profileEmail }),
