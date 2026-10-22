@@ -130,7 +130,7 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
                 {service.age_category && service.age_category !== 'all' && (
                     <div className="absolute bottom-3 start-3">
                         <Badge className="bg-blue-600 text-white font-medium rounded-md shadow-xs text-[10px]">
-                            {service.age_category}
+                            {{ all: t('filterAll'), men: t('ageMen'), women: t('ageWomen'), children: t('ageChildren') }[service.age_category] || service.age_category}
                         </Badge>
                     </div>
                 )}

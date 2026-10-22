@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Plus, Mail, Calendar, Briefcase, FileText, MessageSquare, Camera, Pencil, ThumbsUp, Check, X, ArrowUpRight } from 'lucide-react';
+import { Plus, Mail, Calendar, Briefcase, FileText, MessageSquare, Camera, Pencil, Trash2, ThumbsUp, Check, X, ArrowUpRight } from 'lucide-react';
 import ServiceCard from '../ServiceCard';
 import PostCard from '../community/PostCard';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -388,7 +388,7 @@ function CommentCard({ comment, post, language, timeAgo, user, onDelete, t }) {
                             </div>
                         ) : (
                             <button onClick={() => setShowDeleteConfirm(true)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
-                                <Pencil className="w-3.5 h-3.5 rotate-45" />
+                                <Trash2 className="w-3.5 h-3.5" />
                             </button>
                         )}
                     </div>
