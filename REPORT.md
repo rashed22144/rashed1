@@ -62,7 +62,7 @@ Commits (small, logical): `1a8bc35` i18n foundation · `333cfcf` shell component
 
 | # | Finding | Recommendation |
 |---|---|---|
-| 1 | Community & profile pages load the **full** `users_public` list (every user's email) just to build an avatar map / VIP set | Backend: denormalize `avatar_url` onto posts (already partially stored) or expose a minimal `id,email,avatar_url` avatar endpoint; then drop the bulk loads |
+| 1 | Community page still loads the **full** `users_public` list (every user's email) to build an avatar map (profile page fixed in §7) | Backend: denormalize `avatar_url` onto posts (already partially stored) or expose a minimal `id,email,avatar_url` avatar endpoint; then drop the bulk load |
 | 2 | Report auto-hide (≥3 reports hides a post) and report counting happen client-side in PostCard/CommentItem | Move counting + auto-hide into the `report_*` RPCs / a trigger so it cannot be bypassed |
 | 3 | Likes/loves/shares/comments counters use read-modify-write of whole arrays — lost-update races under concurrency | Add `toggle_like`/`toggle_love` RPCs that only ever add/remove the caller's own email |
 | 4 | Admin dashboard action handlers have no per-action error feedback (a rejected write looks like success until reload) | Wrap handlers and surface `getFriendlyErrorMessage()` — deliberately not done here to keep the admin diff reviewable |
@@ -122,3 +122,19 @@ Note: behaviour depending on the backend contract was not changed — where the 
 - [ ] Admin dashboard: tabs, report counts (`reports_count`), warn → 3rd warning bans 5 days, unban, VIP/Ad role changes, non-admin sees Unauthorized
 - [ ] Public profile of another user: no email shown; your own profile still shows your email
 - [ ] Banned account: can browse, posting/commenting/adding a service blocked with a friendly message
+
+## 7. Addendum — second security pass
+
+Re-scanned `src/` and `public/`: no `service_role` key, no JWTs, no `innerHTML`/`eval`/`document.write`, no tracked `.env` files (only `.env.example`), every `window.open` uses `noopener,noreferrer`.
+
+Fixed in this pass (commit `b178150`):
+
+| File | Enhancement |
+|---|---|
+| [backendClient.js](src/api/backendClient.js) | `auth.updateMe()` now whitelists self-editable fields (`full_name`, `phone`, `bio`, `avatar_url`, `cover_url`, notification prefs). `account_type`, `warnings`, `banned_until`, `email`, `id` are stripped client-side as defense in depth (DB policy remains the real gate) |
+| [UserProfilePage.jsx](src/components/pages/UserProfilePage.jsx) | Loads the profile with `User.filter({ email })` instead of downloading the entire `users_public` list to find one user |
+| [ServiceCard.jsx](src/components/ServiceCard.jsx) / [ServiceDetailPage.jsx](src/components/pages/ServiceDetailPage.jsx) | `tel:` links strip everything except digits/`+`; `mailto:` values are trimmed and URI-encoded, so stored contact strings cannot inject extra URI parameters |
+| [PostImageGallery.jsx](src/components/community/PostImageGallery.jsx) | Lightbox buttons gained translated `aria-label`s (5 new keys, parity check passes at 343), logical start/end positioning, and direction-aware chevrons |
+| [index.html](public/index.html) | Real meta description; `Referrer-Policy: strict-origin-when-cross-origin` |
+
+Still open (unchanged from §3/§5): the Community page still bulk-loads `users_public` for its avatar map (needs a backend/denormalization decision), client-side report thresholds and counter races need RPCs, admin action handlers deserve per-action error toasts, notifications are stored in the poster's language, and the anon-key fallback should be dropped once hosting env vars are set. Security headers (`Content-Security-Policy`, `X-Frame-Options`/`frame-ancestors`, `X-Content-Type-Options`) cannot be set from CRA code — add them in your hosting config (e.g. Vercel `vercel.json` headers) and test the Supabase/Unsplash/Google domains against the CSP before enforcing it. `npm audit fix` was **not** applied in this pass: the registry connection was reset during verification, so no dependency change could be verified safely; re-run `npm audit` + `npm audit fix` (never `--force`) when the registry is reachable, then rebuild.
