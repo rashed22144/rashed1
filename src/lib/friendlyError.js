@@ -16,7 +16,7 @@ export function getFriendlyErrorMessage(error, t) {
     if (raw.includes('permission denied') || raw.includes('row-level security') || raw.includes('42501') || raw.includes('violates row-level')) {
         return t('errPermission');
     }
-    if (raw.includes('limit') || raw.includes('too many') || raw.includes('max') && raw.includes('comment')) {
+    if (raw.includes('limit') || raw.includes('too many') || (raw.includes('max') && raw.includes('comment'))) {
         return t('errLimitReached');
     }
     if (raw.includes('failed to fetch') || raw.includes('network') || raw.includes('load failed')) {

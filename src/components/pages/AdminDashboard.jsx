@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AdminDashboard() {
-    const { t, language, dir } = useLanguage();
+    const { t, dir } = useLanguage();
     const [currentUser, setCurrentUser] = useState(null);
     const [reportedPosts, setReportedPosts] = useState([]);
     const [reportedComments, setReportedComments] = useState([]);

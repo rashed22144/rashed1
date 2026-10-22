@@ -13,7 +13,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 
 export default function SearchResultsPage() {
     const { location, isLoading: isLocationLoading } = useContext(LocationContext);
-    const { t, language, dir } = useLanguage();
+    const { t, dir } = useLanguage();
     const [services, setServices] = useState([]);
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
