@@ -8,7 +8,7 @@ function applySort(query, sort) {
 }
 
 function toError(supabaseError, fallbackMessage) {
-    const message = supabaseError?.message || fallbackMessage || 'حدث خطأ غير متوقع';
+    const message = supabaseError?.message || fallbackMessage || 'Unexpected error';
     const err = new Error(message);
     err.original = supabaseError;
     return err;
@@ -21,7 +21,7 @@ export const ServicePublic = {
         query = applySort(query, sort);
         if (limit) query = query.limit(limit);
         const { data, error } = await query;
-        if (error) throw toError(error, 'تعذر تحميل الخدمات');
+        if (error) throw toError(error, 'Could not load services');
         return data || [];
     },
 
@@ -33,13 +33,13 @@ export const ServicePublic = {
         query = applySort(query, sort);
         if (limit) query = query.limit(limit);
         const { data, error } = await query;
-        if (error) throw toError(error, 'تعذر تحميل الخدمات');
+        if (error) throw toError(error, 'Could not load services');
         return data || [];
     },
 
     async get(id) {
         const { data, error } = await supabase.from('services_public').select('*').eq('id', id).maybeSingle();
-        if (error) throw toError(error, 'تعذر جلب هذه الخدمة');
+        if (error) throw toError(error, 'Could not load this service');
         return data;
     },
 };

@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 
 export default function NotificationBell() {
     const { currentUser } = useAuth();
-    const { language } = useLanguage();
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
 
@@ -65,12 +65,12 @@ export default function NotificationBell() {
     const timeAgo = (date) => {
         const diffMs = Date.now() - new Date(date).getTime();
         const mins = Math.floor(diffMs / 60000);
-        if (mins < 1) return language === 'ar' ? 'الآن' : 'now';
-        if (mins < 60) return language === 'ar' ? `منذ ${mins} د` : `${mins}m ago`;
+        if (mins < 1) return t('timeNow');
+        if (mins < 60) return t('timeMinutesAgo', { count: mins });
         const hours = Math.floor(mins / 60);
-        if (hours < 24) return language === 'ar' ? `منذ ${hours} س` : `${hours}h ago`;
+        if (hours < 24) return t('timeHoursAgo', { count: hours });
         const days = Math.floor(hours / 24);
-        return language === 'ar' ? `منذ ${days} يوم` : `${days}d ago`;
+        return t('timeDaysAgo', { count: days });
     };
 
     return (
@@ -79,7 +79,7 @@ export default function NotificationBell() {
                 <button className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition-colors">
                     <Bell className="w-4 h-4" />
                     {unreadCount > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                        <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
                             {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                     )}
@@ -88,17 +88,17 @@ export default function NotificationBell() {
             <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto p-0">
                 <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
                     <span className="font-bold text-sm text-gray-800">
-                        {language === 'ar' ? 'الإشعارات' : 'Notifications'}
+                        {t('notifications')}
                     </span>
                     {unreadCount > 0 && (
                         <button onClick={markAllRead} className="text-xs text-blue-600 font-medium hover:underline">
-                            {language === 'ar' ? 'تعليم الكل كمقروء' : 'Mark all read'}
+                            {t('markAllRead')}
                         </button>
                     )}
                 </div>
                 {notifications.length === 0 ? (
                     <div className="py-8 text-center text-sm text-gray-400">
-                        {language === 'ar' ? 'لا توجد إشعارات بعد' : 'No notifications yet'}
+                        {t('noNotifications')}
                     </div>
                 ) : (
                     notifications.map((n) => (

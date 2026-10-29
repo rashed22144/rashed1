@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function CommunityPage() {
-    const { t, language, dir } = useLanguage();
+    const { t, dir } = useLanguage();
     const [currentUser, setCurrentUser] = useState(null);
     const [posts, setPosts] = useState([]);
     const [followData, setFollowData] = useState([]);
@@ -190,7 +190,7 @@ export default function CommunityPage() {
                         <div>
                             <h1 className="text-2xl font-bold text-white">{t('community')}</h1>
                             <p className="text-blue-200 text-sm mt-0.5">
-                                {language === 'ar' ? 'شارك وتفاعل مع المجتمع' : 'Share & connect with the community'}
+                                {t('shareConnect')}
                             </p>
                         </div>
                     </div>
@@ -202,7 +202,7 @@ export default function CommunityPage() {
                         <div className="bg-gradient-to-r from-yellow-400 to-amber-500 px-4 py-2.5 flex items-center gap-2">
                             <Crown className="w-4 h-4 text-white" />
                             <h3 className="font-bold text-white text-xs">
-                                {language === 'ar' ? 'خبراء المجتمع' : 'Community Experts'}
+                                {t('communityExperts')}
                             </h3>
                         </div>
                         <div className="flex gap-3 overflow-x-auto p-3 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
@@ -305,7 +305,7 @@ export default function CommunityPage() {
                     <div className="bg-gradient-to-r from-yellow-400 to-amber-500 px-4 py-3 flex items-center gap-2">
                         <Crown className="w-5 h-5 text-white" />
                         <h3 className="font-bold text-white text-sm">
-                            {language === 'ar' ? 'خبراء المجتمع' : 'Community Experts'}
+                            {t('communityExperts')}
                         </h3>
                     </div>
                     <div className="p-3 space-y-1.5 max-h-[70vh] overflow-y-auto">
@@ -325,12 +325,12 @@ export default function CommunityPage() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm font-medium text-gray-800 truncate">{v.full_name || v.email.split('@')[0]}</p>
-                                    <span className="text-[10px] bg-yellow-400 text-white font-bold px-1.5 rounded-full">VIP</span>
+                                    <span className="text-[10px] bg-yellow-400 text-white font-bold px-1.5 rounded-full">{t('vipBadge')}</span>
                                 </div>
                             </Link>
                         )) : (
                             <p className="text-xs text-gray-400 text-center py-4">
-                                {language === 'ar' ? 'لا يوجد خبراء حالياً' : 'No experts yet'}
+                                {t('noExpertsYet')}
                             </p>
                         )}
                     </div>
@@ -341,7 +341,7 @@ export default function CommunityPage() {
                     <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-3 flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-white" />
                         <h3 className="font-bold text-white text-sm">
-                            {language === 'ar' ? 'الأكثر تفاعلاً' : 'Trending'}
+                            {t('trending')}
                         </h3>
                     </div>
                     <div className="p-3 space-y-2">
@@ -356,9 +356,9 @@ export default function CommunityPage() {
                                     <div className="flex items-start gap-2">
                                         <span className="text-lg font-bold text-blue-200 flex-shrink-0">{i + 1}</span>
                                         <div className="min-w-0">
-                                            <p className="text-xs text-gray-700 line-clamp-2">{post.content || (language === 'ar' ? 'منشور' : 'Post')}</p>
+                                            <p className="text-xs text-gray-700 line-clamp-2">{post.content || t('postFallback')}</p>
                                             <p className="text-[10px] text-gray-400 mt-0.5">
-                                                {engagement} {language === 'ar' ? 'تفاعل' : 'interactions'}
+                                                {engagement} {t('interactionsLabel')}
                                             </p>
                                         </div>
                                     </div>
@@ -367,7 +367,7 @@ export default function CommunityPage() {
                         })}
                         {getWeeklyTrendingPosts().length === 0 && (
                             <p className="text-xs text-gray-400 text-center py-4">
-                                {language === 'ar' ? 'لا يوجد منشورات' : 'No posts'}
+                                {t('noPosts')}
                             </p>
                         )}
                     </div>

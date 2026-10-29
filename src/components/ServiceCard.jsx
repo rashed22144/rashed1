@@ -9,6 +9,7 @@ import { createPageUrl, toWhatsAppNumber } from '@/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { getCategoriesMap } from '@/lib/categoriesCache';
+import { getFriendlyErrorMessage } from '@/lib/friendlyError';
 
 // صور افتراضية محسنة ومضغوطة الأبعاد والأوزان عبر معلمات الرابط q=75 و w=600 لسرعة لود فورية
 const defaultImages = {
@@ -37,7 +38,7 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
     const categoryDisplayName = (() => {
         const cat = categoriesMap[service.category_name];
         if (language === 'en' && cat?.name_en) return cat.name_en;
-        return service.category_name || (language === 'en' ? 'Service' : 'خدمة');
+        return service.category_name || t('serviceFallback');
     })();
 
     const getImageUrl = () => {
@@ -55,7 +56,7 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
         if (service[field]) return service[field];
         if (contactInfo?.[field]) return contactInfo[field];
         if (!currentUser) {
-            alert(language === 'en' ? 'Please sign in to view contact info' : 'يجب تسجيل الدخول لعرض بيانات التواصل');
+            alert(t('signInToViewContact'));
             return null;
         }
         setRevealingContact(field);
@@ -66,7 +67,7 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
             return info?.[field] || null;
         } catch (error) {
             setRevealingContact(null);
-            alert(error.message);
+            alert(getFriendlyErrorMessage(error, t));
             return null;
         }
     };
@@ -79,11 +80,11 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
         if (!value) return;
 
         if (contactType === 'call') {
-            window.location.href = 'tel:' + value;
+            window.location.href = 'tel:' + String(value).replace(/[^\d+]/g, '');
         } else if (contactType === 'whatsapp') {
             window.open('https://wa.me/' + toWhatsAppNumber(value), '_blank', 'noopener,noreferrer');
         } else if (contactType === 'email') {
-            window.location.href = 'mailto:' + value;
+            window.location.href = 'mailto:' + encodeURIComponent(String(value).trim());
         }
     };
 
@@ -111,36 +112,36 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 
-                <div className={`absolute top-3 ${language === 'ar' ? 'right-3' : 'left-3'}`}>
+                <div className="absolute top-3 start-3">
                     <Badge variant="secondary" className="bg-white/95 text-gray-800 backdrop-blur-xs font-semibold rounded-lg shadow-xs text-[11px]">
                         {categoryDisplayName}
                     </Badge>
                 </div>
 
                 {service.subscription_plan === 'premium' && (
-                    <div className={`absolute top-3 ${language === 'ar' ? 'left-12' : 'right-12'}`}>
+                    <div className="absolute top-3 end-12">
                         <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-lg border-0 shadow-xs text-[11px]">
-                            <Crown className="w-3 h-3 ml-1 mr-0.5" />
-                            {language === 'en' ? 'Premium' : 'مميز'}
+                            <Crown className="w-3 h-3 ms-1 me-0.5" />
+                            {t('premium')}
                         </Badge>
                     </div>
                 )}
                 
                 {service.age_category && service.age_category !== 'all' && (
-                    <div className={`absolute bottom-3 ${language === 'ar' ? 'right-3' : 'left-3'}`}>
+                    <div className="absolute bottom-3 start-3">
                         <Badge className="bg-blue-600 text-white font-medium rounded-md shadow-xs text-[10px]">
-                            {service.age_category}
+                            {{ all: t('filterAll'), men: t('ageMen'), women: t('ageWomen'), children: t('ageChildren') }[service.age_category] || service.age_category}
                         </Badge>
                     </div>
                 )}
                 
                 {showActions && isOwner && (
-                    <div className={`absolute top-2 ${language === 'ar' ? 'left-2' : 'right-2'}`} onClick={(e) => e.stopPropagation()}>
+                    <div className="absolute top-2 end-2" onClick={(e) => e.stopPropagation()}>
                         <ServiceActionsMenu service={service} onServiceDeleted={onServiceDeleted} isOwner={isOwner} />
                     </div>
                 )}
 
-                <div className={`absolute bottom-3 ${language === 'ar' ? 'left-3' : 'right-3'} flex gap-1.5`}>
+                <div className="absolute bottom-3 end-3 flex gap-1.5">
                     {(service.view_count > 0 || showActions) && (
                         <Badge variant="outline" className="bg-black/40 text-white border-0 text-[10px] py-0.5 px-2 backdrop-blur-xs flex items-center gap-1 rounded-md">
                             <Eye className="w-3 h-3" />
@@ -162,11 +163,11 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
                         {service.title || service.name}
                     </CardTitle>
                     <span className="text-base font-black text-blue-600 shrink-0">
-                        {service.price} <span className="text-xs font-bold text-gray-400">{language === 'en' ? 'RM' : 'ر.ي'}</span>
+                        {service.price} <span className="text-xs font-bold text-gray-400">{t('currency')}</span>
                     </span>
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                    {language === 'en' ? 'By:' : 'بواسطة:'} <span className="font-semibold text-gray-600">{service.provider_name || service.author || 'Student'}</span>
+                    {t('byLabel')} <span className="font-semibold text-gray-600">{service.provider_name || service.author || t('providerFallback')}</span>
                 </p>
             </CardHeader>
             
@@ -186,7 +187,7 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
                                 disabled={revealingContact === 'phone'}
                             >
                                 <Phone className="w-3 h-3" />
-                                <span>{revealingContact === 'phone' ? '...' : (language === 'en' ? 'Call' : 'اتصال')}</span>
+                                <span>{revealingContact === 'phone' ? '...' : t('call')}</span>
                             </button>
                         )}
                         {(service.has_whatsapp ?? !!service.whatsapp) && (
@@ -196,7 +197,7 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
                                 disabled={revealingContact === 'whatsapp'}
                             >
                                 <MessageSquare className="w-3 h-3" />
-                                <span>{revealingContact === 'whatsapp' ? '...' : (language === 'en' ? 'WhatsApp' : 'واتساب')}</span>
+                                <span>{revealingContact === 'whatsapp' ? '...' : t('whatsapp')}</span>
                             </button>
                         )}
                         {(service.has_email ?? !!service.email) && (
@@ -206,7 +207,7 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
                                 disabled={revealingContact === 'email'}
                             >
                                 <Mail className="w-3 h-3" />
-                                <span>{revealingContact === 'email' ? '...' : (language === 'en' ? 'Email' : 'إيميل')}</span>
+                                <span>{revealingContact === 'email' ? '...' : t('email')}</span>
                             </button>
                         )}
                     </div>
@@ -217,7 +218,7 @@ export default function ServiceCard({ service, onServiceDeleted, showActions = f
                     className="w-full h-9 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all duration-200 shadow-xs active:scale-98"
                 >
                     <ExternalLink className="w-3.5 h-3.5" />
-                    <span>{language === 'en' ? 'View Details' : 'عرض التفاصيل الكاملة'}</span>
+                    <span>{t('viewDetails')}</span>
                 </button>
             </CardFooter>
         </Card>

@@ -1,77 +1,38 @@
 import React, { useState } from 'react';
-import { backend } from '@/api/backendClient';
+import { backend, removeUploadedFile } from '@/api/backendClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { validateImageFile } from '@/lib/imageUpload';
 
 export default function ImageUpload({ onImageUploaded, currentImageUrl }) {
-    const { language } = useLanguage();
+    const { t, dir } = useLanguage();
     const [uploading, setUploading] = useState(false);
     const [imageUrl, setImageUrl] = useState(currentImageUrl || '');
     const [isDragActive, setIsDragActive] = useState(false);
 
-    // دالة الضغط المتقدمة: تحافظ على جودة الـ Full HD وتقلل مساحة الملف الذكية
-    const compressImage = (file) => {
-        return new Promise((resolve) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            const url = URL.createObjectURL(file);
-            
-            img.onload = () => {
-                // الحد الأقصى للأبعاد 1080px (أي صورة أعلى تتصغر تلقائياً لهذا المقاس)
-                const MAX = 1080; 
-                let { width, height } = img;
-                
-                if (width > MAX || height > MAX) {
-                    if (width > height) {
-                        height = Math.round((height * MAX) / width);
-                        width = MAX;
-                    } else {
-                        width = Math.round((width * MAX) / height);
-                        height = MAX;
-                    }
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                
-                // تفعيل خوارزميات التنعيم العالية في المتصفح لضمان عدم بكسلة الصورة
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                
-                ctx.drawImage(img, 0, 0, width, height);
-                URL.revokeObjectURL(url);
-                
-                // رفع الجودة إلى 0.90 للحصول على ضغط ممتاز بدون خسارة تفاصيل الصورة نهائياً
-                canvas.toBlob(resolve, 'image/jpeg', 0.90);
-            };
-            img.src = url;
-        });
-    };
-
     const processAndUploadFile = async (file) => {
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
-            alert(language === 'en' ? 'Please choose a valid image file only (PNG, JPG, GIF)' : 'يرجى اختيار ملف صورة صالحة فقط (PNG, JPG, GIF)');
+        const errorKey = validateImageFile(file);
+        if (errorKey) {
+            alert(t(errorKey));
             return;
         }
 
         setUploading(true);
         try {
-            const compressed = await compressImage(file);
-            // تحويل الـ Blob الملوّن والجديد إلى ملف جاهز للرفع بامتداد مناسب للسيرفر
-            const compressedFile = new File([compressed], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' });
-            
-            const result = await backend.integrations.Core.UploadFile({ file: compressedFile });
+            const result = await backend.integrations.Core.UploadFile({ file });
+            const previousUrl = imageUrl;
             setImageUrl(result.file_url);
             if (onImageUploaded) onImageUploaded(result.file_url);
+            // Replacing a staged service image orphans the previous file.
+            if (previousUrl && previousUrl !== result.file_url) removeUploadedFile(previousUrl);
         } catch (error) {
-            console.error('خطأ في معالجة أو رفع الصورة:', error);
-            alert(language === 'en' ? 'An error occurred while processing the image, please try again' : 'حدث خطأ أثناء معالجة الصورة، يرجى المحاولة مرة أخرى');
+            console.error('Image processing/upload failed:', error);
+            alert(t('uploadFailed'));
         } finally {
             setUploading(false);
         }
@@ -82,7 +43,6 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl }) {
         processAndUploadFile(file);
     };
 
-    // دعم خاصية السحب والإفلات (Drag and Drop) لرفع أسرع وأسهل
     const handleDragOver = (e) => {
         e.preventDefault();
         setIsDragActive(true);
@@ -100,26 +60,29 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl }) {
     };
 
     const removeImage = () => {
+        // Replacing/removing a staged service image orphans the old file.
+        if (imageUrl) removeUploadedFile(imageUrl);
         setImageUrl('');
         if (onImageUploaded) onImageUploaded('');
     };
 
     return (
-        <div className="space-y-4" dir="rtl">
+        <div className="space-y-4" dir={dir}>
             {imageUrl ? (
                 <Card className="relative overflow-hidden group rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 hover:shadow-md">
-                    <img 
-                        src={imageUrl} 
-                        alt={language === 'en' ? 'Uploaded image preview' : 'معاينة الصورة المرفوعة'} 
+                    <img
+                        src={imageUrl}
+                        alt={t('uploadedImageAlt')}
+                        loading="lazy"
                         className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    {/* طبقة تظليل جمالية تظهر عند تمرير الماوس فوق الصورة */}
                     <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    
+
                     <Button
                         variant="destructive"
                         size="icon"
-                        className="absolute top-3 right-3 rounded-full w-8 h-8 bg-red-600/90 hover:bg-red-600 shadow-md backdrop-blur-sm transition-transform duration-200 active:scale-95"
+                        aria-label={t('deleteService')}
+                        className="absolute top-3 end-3 rounded-full w-8 h-8 bg-red-600/90 hover:bg-red-600 shadow-md backdrop-blur-sm transition-transform duration-200 active:scale-95"
                         onClick={removeImage}
                         type="button"
                     >
@@ -127,10 +90,10 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl }) {
                     </Button>
                 </Card>
             ) : (
-                <Card 
+                <Card
                     className={`border-2 border-dashed p-8 rounded-2xl text-center transition-all duration-300 relative ${
-                        isDragActive 
-                            ? 'border-blue-500 bg-blue-50/40 scale-[0.99]' 
+                        isDragActive
+                            ? 'border-blue-500 bg-blue-50/40 scale-[0.99]'
                             : 'border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50/50'
                     }`}
                     onDragOver={handleDragOver}
@@ -140,7 +103,7 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl }) {
                     {uploading && (
                         <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] rounded-2xl flex flex-col items-center justify-center z-10 animate-fade-in">
                             <Loader2 className="h-8 w-8 text-blue-600 animate-spin mb-2" />
-                            <p className="text-xs font-semibold text-gray-600 animate-pulse">{language === 'en' ? 'Processing & uploading in high quality...' : 'جاري معالجة ورفع الصورة بدقة عالية...'}</p>
+                            <p className="text-xs font-semibold text-gray-600 animate-pulse">{t('uploadProcessing')}</p>
                         </div>
                     )}
 
@@ -150,26 +113,26 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl }) {
                         }`}>
                             <ImageIcon className="h-8 w-8" />
                         </div>
-                        
+
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-gray-700">
-                                {language === 'en' ? 'Drag and drop the image here, or' : 'اسحب الصورة وأفلتها هنا، أو'}{' '}
+                                {t('dragDropImage')}{' '}
                                 <label htmlFor="image-upload" className="text-blue-600 hover:text-blue-700 cursor-pointer font-semibold underline underline-offset-4">
-                                    {language === 'en' ? 'Browse files' : 'تصفح الملفات'}
+                                    {t('browseFiles')}
                                 </label>
                             </p>
-                            
+
                             <Input
                                 id="image-upload"
                                 type="file"
-                                accept="image/*"
+                                accept="image/png,image/jpeg,image/gif,image/webp"
                                 onChange={handleFileUpload}
                                 className="hidden"
                                 disabled={uploading}
                             />
-                            
+
                             <p className="text-xs text-gray-400 font-normal">
-                                {language === 'en' ? 'Supports: PNG, JPG, GIF up to 10MB' : 'يدعم الصيغ التالية: PNG, JPG, GIF حتى 10 ميجابايت'}
+                                {t('uploadSupports')}
                             </p>
                         </div>
                     </div>

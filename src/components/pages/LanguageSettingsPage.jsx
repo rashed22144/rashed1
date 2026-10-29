@@ -4,26 +4,20 @@ import { Languages, Check } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function LanguageSettingsPage() {
-    const { language, changeLanguage, dir } = useLanguage();
+    const { t, language, changeLanguage, dir } = useLanguage();
 
     const languages = [
         {
             code: 'ar',
-            nameInAr: 'العربية',
-            nameInEn: 'Arabic',
             nativeName: 'العربية',
             flag: '🇸🇦',
-            descriptionAr: 'اللغة العربية',
-            descriptionEn: 'Arabic Language',
+            descriptionKey: 'langDescArabic',
         },
         {
             code: 'en',
-            nameInAr: 'الإنجليزية',
-            nameInEn: 'English',
             nativeName: 'English',
             flag: '🇺🇸',
-            descriptionAr: 'اللغة الإنجليزية',
-            descriptionEn: 'English Language',
+            descriptionKey: 'langDescEnglish',
         },
     ];
 
@@ -31,10 +25,10 @@ export default function LanguageSettingsPage() {
         <div className="max-w-2xl mx-auto space-y-6" dir={dir}>
             <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {language === 'ar' ? 'إعدادات اللغة' : 'Language Settings'}
+                    {t('languageSettingsTitle')}
                 </h1>
                 <p className="text-gray-600">
-                    {language === 'ar' ? 'اختر اللغة المفضلة لديك' : 'Choose your preferred language'}
+                    {t('chooseLanguage')}
                 </p>
             </div>
 
@@ -42,7 +36,7 @@ export default function LanguageSettingsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Languages className="w-5 h-5" />
-                        {language === 'ar' ? 'اللغات المتاحة' : 'Available Languages'}
+                        {t('availableLanguages')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -64,7 +58,7 @@ export default function LanguageSettingsPage() {
                                             {lang.nativeName}
                                         </h3>
                                         <p className="text-sm text-gray-500">
-                                            {language === 'ar' ? lang.descriptionAr : lang.descriptionEn}
+                                            {t(lang.descriptionKey)}
                                         </p>
                                     </div>
                                 </div>

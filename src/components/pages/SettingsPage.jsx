@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, User as UserIcon, Bell, Shield } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getFriendlyErrorMessage } from '@/lib/friendlyError';
 
 export default function SettingsPage() {
     const { t, dir } = useLanguage();
@@ -23,6 +24,7 @@ export default function SettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
         loadUserData();
@@ -64,6 +66,8 @@ export default function SettingsPage() {
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (error) {
             console.error('خطأ في حفظ الإعدادات:', error);
+            setErrorMessage(getFriendlyErrorMessage(error, t));
+            setTimeout(() => setErrorMessage(''), 4000);
         } finally {
             setIsSaving(false);
         }
@@ -88,6 +92,14 @@ export default function SettingsPage() {
                 <Alert className="bg-green-50 border-green-200">
                     <AlertDescription className="text-green-800">
                         {successMessage}
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {errorMessage && (
+                <Alert className="bg-red-50 border-red-200">
+                    <AlertDescription className="text-red-800">
+                        {errorMessage}
                     </AlertDescription>
                 </Alert>
             )}
@@ -216,7 +228,7 @@ export default function SettingsPage() {
                     className="bg-gradient-to-r from-indigo-600 to-purple-600"
                     size="lg"
                 >
-                    <Save className={`w-4 h-4 ${dir === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                    <Save className="w-4 h-4 me-2" />
                     {isSaving ? t('saving') : t('saveSettings')}
                 </Button>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, memo } from 'react';
-import { backend } from '@/api/backendClient';
+import { backend, removeUploadedFile } from '@/api/backendClient';
 import { Heart, ThumbsUp, MessageCircle, Share2, Send, Trash2, UserPlus, UserCheck, Flag, TrendingUp, Clock, Crown, Megaphone } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -8,6 +8,7 @@ import { ar, enUS } from 'date-fns/locale';
 import CommentItem from './CommentItem';
 import PostImageGallery from './PostImageGallery';
 import { Link } from 'react-router-dom';
+import { getFriendlyErrorMessage } from '@/lib/friendlyError';
 
 function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFollowChange, isOwnerView = false, vipEmails = new Set(), userAvatars = {} }) {
     const { t, language, dir } = useLanguage();
@@ -75,13 +76,14 @@ function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFo
 
     const handleDelete = async () => {
         await backend.entities.Post.delete(post.id);
+        [post.image_url, ...(post.images || [])].forEach((url) => { if (url) removeUploadedFile(url); });
         onDelete(post.id);
     };
 
     const handleReport = async () => {
         if (!userEmail || hasReported) return;
         const newReports = [...reports, userEmail];
-        const newReasons = [...(post.report_reasons || []), reportReason || (language === 'ar' ? 'بدون سبب' : 'No reason')];
+        const newReasons = [...(post.report_reasons || []), reportReason || t('noReason')];
         const shouldHide = newReports.length >= 3;
         await backend.entities.Post.update(post.id, { reports: newReports, report_reasons: newReasons, ...(shouldHide ? { hidden: true } : {}) });
         onUpdate({ ...post, reports: newReports, report_reasons: newReasons, ...(shouldHide ? { hidden: true } : {}) });
@@ -116,15 +118,13 @@ function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFo
         if (!commentText.trim() || !currentUser) return;
 
         if (currentUser.banned_until && new Date(currentUser.banned_until) > new Date()) {
-            alert(language === 'ar' ? 'حسابك محظور مؤقتاً من النشر والتعليق' : 'Your account is temporarily banned from posting and commenting');
+            alert(t('bannedFromPostingCommenting'));
             return;
         }
 
         const myTopLevelCount = comments.filter(c => !c.parent_comment_id && c.author_email === currentUser.email).length;
         if (myTopLevelCount >= MAX_COMMENTS_PER_USER) {
-            alert(language === 'ar'
-                ? `يمكنك إضافة ${MAX_COMMENTS_PER_USER} تعليقات كحد أقصى على هذا المنشور`
-                : `You can add up to ${MAX_COMMENTS_PER_USER} comments on this post`);
+            alert(t('commentLimitReached', { max: MAX_COMMENTS_PER_USER }));
             return;
         }
 
@@ -145,7 +145,7 @@ function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFo
             setCommentText('');
         } catch (error) {
             console.error(error);
-            alert(language === 'ar' ? `تعذر إرسال التعليق: ${error.message}` : `Could not send comment: ${error.message}`);
+            alert(getFriendlyErrorMessage(error, t));
         } finally {
             setSubmitting(false);
         }
@@ -175,13 +175,13 @@ function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFo
             {post.is_ad && (
                 <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
                     <Megaphone className="w-3 h-3" />
-                    {language === 'ar' ? 'إعلان ممول' : 'Sponsored'}
+                    {t('sponsored')}
                 </div>
             )}
             {isVipAuthor && !post.is_ad && (
                 <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
                     <Crown className="w-3 h-3 fill-white" />
-                    {language === 'ar' ? 'شخصية مميزة' : 'VIP'}
+                    {t('vipBadge')}
                 </div>
             )}
             <div className={`p-4 flex items-center justify-between gap-3 relative ${isVipAuthor ? 'pb-0' : ''}`}>
@@ -218,11 +218,11 @@ function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFo
                         showReportConfirm ? (
                             <div className="flex flex-col gap-1.5 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-xs text-orange-600">{language === 'ar' ? 'سبب الإبلاغ:' : 'Reason:'}</span>
+                                    <span className="text-xs text-orange-600">{t('reportReasonLabel')}</span>
                                     <button onClick={handleReport} className="text-xs font-bold text-orange-600 hover:underline">✓</button>
                                     <button onClick={() => { setShowReportConfirm(false); setReportReason(''); }} className="text-xs text-gray-400 hover:underline">✕</button>
                                 </div>
-                                <input value={reportReason} onChange={e => setReportReason(e.target.value)} placeholder={language === 'ar' ? 'اكتب السبب...' : 'Write reason...'} className="text-xs bg-white border border-orange-200 rounded-lg px-2 py-1 focus:outline-none focus:border-orange-400" />
+                                <input value={reportReason} onChange={e => setReportReason(e.target.value)} placeholder={t('writeReasonPlaceholder')} className="text-xs bg-white border border-orange-200 rounded-lg px-2 py-1 focus:outline-none focus:border-orange-400" />
                             </div>
                         ) : (
                             <button onClick={() => setShowReportConfirm(true)} className={`p-2 rounded-full transition-colors ${hasReported ? 'text-orange-400 cursor-default' : 'text-gray-300 hover:text-orange-400 hover:bg-orange-50'}`}><Flag className="w-3.5 h-3.5" /></button>
@@ -231,7 +231,7 @@ function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFo
                     {(isOwner || isAdmin) && (
                         showDeleteConfirm ? (
                             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5">
-                                <button onClick={handleDelete} className="text-xs font-bold text-red-600 hover:underline">حذف؟ ✓</button>
+                                <button onClick={handleDelete} className="text-xs font-bold text-red-600 hover:underline">{t('deleteConfirmQ')} ✓</button>
                                 <button onClick={() => setShowDeleteConfirm(false)} className="text-xs text-gray-400 hover:underline">✕</button>
                             </div>
                         ) : (

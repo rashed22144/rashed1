@@ -16,7 +16,7 @@ import { LocationContext } from './LocationContext';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function LocationSelector() {
-    const { language, dir } = useLanguage();
+    const { t, dir } = useLanguage();
     const { location, setLocation, isLoading: isLocationLoading } = useContext(LocationContext);
     const [allLocations, setAllLocations] = useState([]);
     const [countries, setCountries] = useState([]);
@@ -70,22 +70,22 @@ export default function LocationSelector() {
             <DialogTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2 rounded-xl">
                     <MapPin className="w-4 h-4 text-blue-600" />
-                    {isLocationLoading ? '...' : (location ? `${location.city}, ${location.country}` : (language === 'en' ? 'Select location' : 'حدد موقعك'))}
+                    {isLocationLoading ? '...' : (location ? `${location.city}, ${location.country}` : t('selectLocationBtn'))}
                 </Button>
             </DialogTrigger>
             <DialogContent className="rounded-2xl">
                 <DialogHeader>
-                    <DialogTitle>{language === 'en' ? 'Select your location' : 'حدد موقعك'}</DialogTitle>
+                    <DialogTitle>{t('selectYourLocation')}</DialogTitle>
                     <DialogDescription>
-                        اختر دولتك ومدينتك لعرض الخدمات المتوفرة في منطقتك.
+                        {t('locationDialogDesc')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4" dir={dir}>
                     <div className="space-y-1.5">
-                        <label className="font-semibold text-sm text-gray-700">{language === 'en' ? 'Country' : 'الدولة'}</label>
+                        <label className="font-semibold text-sm text-gray-700">{t('countryLabel')}</label>
                         <Select value={selectedCountry} onValueChange={setSelectedCountry}>
                             <SelectTrigger className="rounded-xl">
-                                <SelectValue placeholder={language === 'en' ? 'Select country' : 'اختر الدولة'} />
+                                <SelectValue placeholder={t('selectCountry')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {countries.map(country => (
@@ -95,10 +95,10 @@ export default function LocationSelector() {
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="font-semibold text-sm text-gray-700">{language === 'en' ? 'City' : 'المدينة'}</label>
+                        <label className="font-semibold text-sm text-gray-700">{t('cityLabel')}</label>
                         <Select value={selectedCity} onValueChange={setSelectedCity} disabled={!selectedCountry}>
                             <SelectTrigger className="rounded-xl">
-                                <SelectValue placeholder={language === 'en' ? 'Select city' : 'اختر المدينة'} />
+                                <SelectValue placeholder={t('selectCity')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {cities.map(city => (
@@ -110,8 +110,8 @@ export default function LocationSelector() {
                 </div>
                 <DialogFooter>
                     <Button onClick={handleSave} disabled={!selectedCountry || !selectedCity} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
-                        <Check className="ml-1.5 h-4 w-4" />
-                        حفظ الموقع الحالي
+                        <Check className="me-1.5 h-4 w-4" />
+                        {t('saveLocation')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

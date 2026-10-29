@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 // خريطة اسم الـ Entity (زي ما مستخدم بالكود) -> اسم الجدول الحقيقي في Supabase
 const TABLE_MAP = {
@@ -7,6 +7,7 @@ const TABLE_MAP = {
     Location: 'locations',
     User: 'users',
     UserAdmin: 'users',   // الأدمن فقط: قراءة كاملة (phone, warnings, banned_until...)
+    ServiceAdmin: 'services', // الأدمن فقط: قراءة من الجدول الأساسي (reports / report_reasons)
     Post: 'posts',
     PostComment: 'post_comments',
     Follow: 'follows',
@@ -22,15 +23,16 @@ function applySort(query, sort) {
 }
 
 function toError(supabaseError, fallbackMessage) {
-    const message = supabaseError?.message || supabaseError?.error_description || supabaseError?.hint || fallbackMessage || 'حدث خطأ غير متوقع';
+    const message = supabaseError?.message || supabaseError?.error_description || supabaseError?.hint || fallbackMessage || 'Unexpected error';
     const err = new Error(message);
     err.original = supabaseError;
     return err;
 }
 
 // مصنع عام لإنشاء "Entity" متوافق مع نفس واجهة backend (list/filter/get/create/update/delete)
-// القراءة العامة لجدول users تتم من view آمن (users_public) بدون الحقول الحساسة
-const READ_TABLE_MAP = { users: 'users_public' };
+// Public reads go through safe views only: users_public (no private columns) and
+// services_public (contact flags + counters, no phone/email/whatsapp). Writes still target base tables.
+const READ_TABLE_MAP = { users: 'users_public', services: 'services_public' };
 function createEntity(tableName, readTable = tableName) {
     return {
         async list(sort, limit) {
@@ -38,7 +40,7 @@ function createEntity(tableName, readTable = tableName) {
             query = applySort(query, sort);
             if (limit) query = query.limit(limit);
             const { data, error } = await query;
-            if (error) throw toError(error, `تعذر تحميل بيانات ${tableName}`);
+            if (error) throw toError(error, `Could not load ${tableName}`);
             return data || [];
         },
 
@@ -50,31 +52,31 @@ function createEntity(tableName, readTable = tableName) {
             query = applySort(query, sort);
             if (limit) query = query.limit(limit);
             const { data, error } = await query;
-            if (error) throw toError(error, `تعذر تحميل بيانات ${tableName}`);
+            if (error) throw toError(error, `Could not load ${tableName}`);
             return data || [];
         },
 
         async get(id) {
             const { data, error } = await supabase.from(readTable).select('*').eq('id', id).maybeSingle();
-            if (error) throw toError(error, `تعذر جلب هذا العنصر من ${tableName}`);
+            if (error) throw toError(error, `Could not load this item from ${tableName}`);
             return data;
         },
 
         async create(payload) {
             const { data, error } = await supabase.from(tableName).insert([payload]).select().single();
-            if (error) throw toError(error, `تعذر إنشاء عنصر جديد في ${tableName}`);
+            if (error) throw toError(error, `Could not create item in ${tableName}`);
             return data;
         },
 
         async update(id, payload) {
             const { data, error } = await supabase.from(tableName).update(payload).eq('id', id).select().single();
-            if (error) throw toError(error, `تعذر تحديث هذا العنصر في ${tableName}`);
+            if (error) throw toError(error, `Could not update this item in ${tableName}`);
             return data;
         },
 
         async delete(id) {
             const { error } = await supabase.from(tableName).delete().eq('id', id);
-            if (error) throw toError(error, `تعذر حذف هذا العنصر من ${tableName}`);
+            if (error) throw toError(error, `Could not delete this item from ${tableName}`);
             return true;
         },
     };
@@ -84,7 +86,7 @@ const entities = {};
 Object.entries(TABLE_MAP).forEach(([entityName, tableName]) => {
     entities[entityName] = createEntity(
         tableName,
-        entityName === 'UserAdmin' ? tableName : (READ_TABLE_MAP[tableName] || tableName)
+        (entityName === 'UserAdmin' || entityName === 'ServiceAdmin') ? tableName : (READ_TABLE_MAP[tableName] || tableName)
     );
 });
 
@@ -96,7 +98,7 @@ async function fetchOrCreateProfile(authUser) {
         .eq('email', authUser.email)
         .maybeSingle();
 
-    if (error) throw toError(error, 'تعذر جلب بيانات المستخدم');
+    if (error) throw toError(error, 'Could not load user profile');
 
     if (!profile) {
         const { data: created, error: createError } = await supabase
@@ -107,7 +109,7 @@ async function fetchOrCreateProfile(authUser) {
             }])
             .select()
             .single();
-        if (createError) throw toError(createError, 'تعذر إنشاء حساب المستخدم');
+        if (createError) throw toError(createError, 'Could not create user profile');
         profile = created;
     }
     return profile;
@@ -124,13 +126,18 @@ const auth = {
     async updateMe(payload) {
         const { data: { user }, error } = await supabase.auth.getUser();
         if (error || !user) throw new Error('User not logged in');
+        // Defense in depth: self-service profile updates may only touch editable fields.
+        // Protected columns (account_type, warnings, banned_until, email, id) are stripped even if a caller passes them.
+        const PROFILE_FIELDS = ['full_name', 'phone', 'bio', 'avatar_url', 'cover_url', 'notifications_enabled', 'email_notifications', 'marketing_emails'];
+        const safePayload = {};
+        PROFILE_FIELDS.forEach((field) => { if (payload?.[field] !== undefined) safePayload[field] = payload[field]; });
         const { data, error: updateError } = await supabase
             .from('users')
-            .update(payload)
+            .update(safePayload)
             .eq('email', user.email)
             .select()
             .single();
-        if (updateError) throw toError(updateError, 'تعذر تحديث بيانات المستخدم');
+        if (updateError) throw toError(updateError, 'Could not update user profile');
         return data;
     },
 
@@ -146,25 +153,114 @@ const auth = {
     },
 };
 
+// ============================================================
+// Single image pipeline — every upload goes through UploadFile.
+// Callers must not pre-compress: compression lives here only, so
+// nothing can bypass it. Canvas re-encode also strips EXIF.
+// ============================================================
+export const UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
+const MAX_DIMENSION_BY_KIND = { avatar: 400, cover: 1280 };
+const DEFAULT_MAX_DIMENSION = 1080;
+
+function loadImageElement(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+        img.src = url;
+    });
+}
+
+function canvasToBlob(canvas, type, quality) {
+    return new Promise((resolve) => { canvas.toBlob((blob) => resolve(blob), type, quality); });
+}
+
+// Downscale + re-encode. WebP 0.8 first; JPEG fallback when WebP is
+// unsupported, except PNG sources keep PNG so transparency survives
+// (WebP itself also preserves alpha). Animated GIFs are flattened to
+// their first frame by the canvas draw.
+async function compressImageForUpload(file, kind) {
+    const maxDimension = MAX_DIMENSION_BY_KIND[kind] || DEFAULT_MAX_DIMENSION;
+    const img = await loadImageElement(file);
+    let width = img.naturalWidth || img.width;
+    let height = img.naturalHeight || img.height;
+    if (!width || !height) throw new Error('Image compression failed');
+    if (width > maxDimension || height > maxDimension) {
+        if (width >= height) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
+        else { width = Math.round((width * maxDimension) / height); height = maxDimension; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Image compression failed');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, width, height);
+
+    let blob = await canvasToBlob(canvas, 'image/webp', 0.8);
+    if (!blob || blob.type !== 'image/webp') {
+        blob = file.type === 'image/png'
+            ? await canvasToBlob(canvas, 'image/png')
+            : await canvasToBlob(canvas, 'image/jpeg', 0.85);
+    }
+    if (!blob) throw new Error('Image compression failed');
+    const extByType = { 'image/webp': 'webp', 'image/png': 'png', 'image/jpeg': 'jpg' };
+    return { blob, ext: extByType[blob.type] || 'jpg' };
+}
+
+// Extract the storage object name from a public uploads URL.
+// Returns null for anything that is not this project's uploads bucket.
+export function parseUploadObjectName(publicUrl) {
+    if (!publicUrl || typeof publicUrl !== 'string') return null;
+    const marker = '/storage/v1/object/public/uploads/';
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) return null;
+    let name = publicUrl.slice(idx + marker.length).split(/[?#]/)[0];
+    try { name = decodeURIComponent(name); } catch { /* keep raw name */ }
+    name = name.replace(/^\/+/, '');
+    if (!name || name.includes('..')) return null;
+    return name;
+}
+
+// Best-effort delete of a previously uploaded file. Never throws and
+// never blocks the UI; foreign / non-uploads URLs are ignored.
+// Note: storage remove() needs a SELECT policy on storage.objects
+// (plus DELETE) or it silently removes nothing — see REPORT.md.
+export async function removeUploadedFile(publicUrl) {
+    try {
+        const name = parseUploadObjectName(publicUrl);
+        if (!name) return;
+        await supabase.storage.from('uploads').remove([name]);
+    } catch { /* best-effort cleanup only */ }
+}
+
 const integrations = {
     Core: {
         // رفع ملف حقيقي إلى Supabase Storage (تأكد من إنشاء bucket باسم "uploads" وجعله public)
-        async UploadFile({ file }) {
-            const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
-            const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-            const { error } = await supabase.storage.from('uploads').upload(fileName, file, {
+        // kind: 'avatar' (400px) | 'cover' (1280px) | default (1080px, posts/services)
+        async UploadFile({ file, kind } = {}) {
+            // Client-side UX validation only; the bucket enforces login, 5MB and image mime types server-side.
+            if (!file || !ALLOWED_IMAGE_TYPES[file.type]) throw new Error('Only image files (PNG, JPG, GIF, WebP) are allowed');
+            if (file.size > UPLOAD_MAX_BYTES) throw new Error('Image is too large. Maximum size is 5MB.');
+            const { blob, ext } = await compressImageForUpload(file, kind);
+            const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+            const { error } = await supabase.storage.from('uploads').upload(fileName, blob, {
                 cacheControl: '3600',
                 upsert: false,
+                contentType: blob.type,
             });
-            if (error) throw toError(error, 'تعذر رفع الملف - تأكد من وجود bucket باسم uploads');
+            if (error) throw toError(error, 'Could not upload file');
             const { data } = supabase.storage.from('uploads').getPublicUrl(fileName);
             return { file_url: data.publicUrl };
         },
 
         // إرسال إيميل: Supabase وحدها لا ترسل إيميلات مباشرة من الفرونت اند.
         // لتفعيلها لاحقاً: أنشئ Supabase Edge Function واستدعها هنا عبر supabase.functions.invoke(...)
-        async SendEmail({ to, subject, body }) {
-            console.warn('[SendEmail] لم يتم إرسال إيميل فعلي - يحتاج Supabase Edge Function.', { to, subject, body });
+        async SendEmail() {
+            // No-op: email needs a Supabase Edge Function. Never log recipients or bodies (PII).
             return { success: false, skipped: true };
         },
     },
@@ -179,7 +275,7 @@ export const backend = { auth, entities, integrations };
 // يرجع بيانات التواصل الكاملة لخدمة معينة - يشتغل بس لو المستخدم مسجل دخول
 export async function getServiceContact(serviceId) {
     const { data, error } = await supabase.rpc('get_service_contact', { target_id: serviceId });
-    if (error) throw toError(error, 'يجب تسجيل الدخول لعرض بيانات التواصل');
+    if (error) throw toError(error, 'Please sign in to view contact info');
     return data?.[0] || null;
 }
 
@@ -187,18 +283,18 @@ export async function getServiceContact(serviceId) {
 export async function incrementServiceView(serviceId) {
     try {
         await supabase.rpc('increment_service_view', { target_id: serviceId });
-    } catch (e) { console.error('incrementServiceView failed:', e); }
+    } catch (e) { /* view counter is best-effort */ }
 }
 
 // زيادة عداد الضغطات على أزرار التواصل
 export async function incrementServiceClick(serviceId) {
     try {
         await supabase.rpc('increment_service_click', { target_id: serviceId });
-    } catch (e) { console.error('incrementServiceClick failed:', e); }
+    } catch (e) { /* click counter is best-effort */ }
 }
 
 // الإبلاغ عن خدمة - يحتاج تسجيل دخول
 export async function reportService(serviceId, reason) {
     const { error } = await supabase.rpc('report_service', { target_id: serviceId, reason: reason || null });
-    if (error) throw toError(error, 'تعذر إرسال الإبلاغ');
+    if (error) throw toError(error, 'Could not send report');
 }
