@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 // خريطة اسم الـ Entity (زي ما مستخدم بالكود) -> اسم الجدول الحقيقي في Supabase
 const TABLE_MAP = {
@@ -7,6 +7,7 @@ const TABLE_MAP = {
     Location: 'locations',
     User: 'users',
     UserAdmin: 'users',   // الأدمن فقط: قراءة كاملة (phone, warnings, banned_until...)
+    ServiceAdmin: 'services', // الأدمن فقط: قراءة من الجدول الأساسي (reports / report_reasons)
     Post: 'posts',
     PostComment: 'post_comments',
     Follow: 'follows',
@@ -85,7 +86,7 @@ const entities = {};
 Object.entries(TABLE_MAP).forEach(([entityName, tableName]) => {
     entities[entityName] = createEntity(
         tableName,
-        entityName === 'UserAdmin' ? tableName : (READ_TABLE_MAP[tableName] || tableName)
+        (entityName === 'UserAdmin' || entityName === 'ServiceAdmin') ? tableName : (READ_TABLE_MAP[tableName] || tableName)
     );
 });
 
@@ -152,19 +153,104 @@ const auth = {
     },
 };
 
+// ============================================================
+// Single image pipeline — every upload goes through UploadFile.
+// Callers must not pre-compress: compression lives here only, so
+// nothing can bypass it. Canvas re-encode also strips EXIF.
+// ============================================================
+export const UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
+const MAX_DIMENSION_BY_KIND = { avatar: 400, cover: 1280 };
+const DEFAULT_MAX_DIMENSION = 1080;
+
+function loadImageElement(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+        img.src = url;
+    });
+}
+
+function canvasToBlob(canvas, type, quality) {
+    return new Promise((resolve) => { canvas.toBlob((blob) => resolve(blob), type, quality); });
+}
+
+// Downscale + re-encode. WebP 0.8 first; JPEG fallback when WebP is
+// unsupported, except PNG sources keep PNG so transparency survives
+// (WebP itself also preserves alpha). Animated GIFs are flattened to
+// their first frame by the canvas draw.
+async function compressImageForUpload(file, kind) {
+    const maxDimension = MAX_DIMENSION_BY_KIND[kind] || DEFAULT_MAX_DIMENSION;
+    const img = await loadImageElement(file);
+    let width = img.naturalWidth || img.width;
+    let height = img.naturalHeight || img.height;
+    if (!width || !height) throw new Error('Image compression failed');
+    if (width > maxDimension || height > maxDimension) {
+        if (width >= height) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
+        else { width = Math.round((width * maxDimension) / height); height = maxDimension; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Image compression failed');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, width, height);
+
+    let blob = await canvasToBlob(canvas, 'image/webp', 0.8);
+    if (!blob || blob.type !== 'image/webp') {
+        blob = file.type === 'image/png'
+            ? await canvasToBlob(canvas, 'image/png')
+            : await canvasToBlob(canvas, 'image/jpeg', 0.85);
+    }
+    if (!blob) throw new Error('Image compression failed');
+    const extByType = { 'image/webp': 'webp', 'image/png': 'png', 'image/jpeg': 'jpg' };
+    return { blob, ext: extByType[blob.type] || 'jpg' };
+}
+
+// Extract the storage object name from a public uploads URL.
+// Returns null for anything that is not this project's uploads bucket.
+export function parseUploadObjectName(publicUrl) {
+    if (!publicUrl || typeof publicUrl !== 'string') return null;
+    const marker = '/storage/v1/object/public/uploads/';
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) return null;
+    let name = publicUrl.slice(idx + marker.length).split(/[?#]/)[0];
+    try { name = decodeURIComponent(name); } catch { /* keep raw name */ }
+    name = name.replace(/^\/+/, '');
+    if (!name || name.includes('..')) return null;
+    return name;
+}
+
+// Best-effort delete of a previously uploaded file. Never throws and
+// never blocks the UI; foreign / non-uploads URLs are ignored.
+// Note: storage remove() needs a SELECT policy on storage.objects
+// (plus DELETE) or it silently removes nothing — see REPORT.md.
+export async function removeUploadedFile(publicUrl) {
+    try {
+        const name = parseUploadObjectName(publicUrl);
+        if (!name) return;
+        await supabase.storage.from('uploads').remove([name]);
+    } catch { /* best-effort cleanup only */ }
+}
+
 const integrations = {
     Core: {
         // رفع ملف حقيقي إلى Supabase Storage (تأكد من إنشاء bucket باسم "uploads" وجعله public)
-        async UploadFile({ file }) {
+        // kind: 'avatar' (400px) | 'cover' (1280px) | default (1080px, posts/services)
+        async UploadFile({ file, kind } = {}) {
             // Client-side UX validation only; the bucket enforces login, 5MB and image mime types server-side.
-            const ALLOWED = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
-            const fileExt = ALLOWED[file?.type];
-            if (!fileExt) throw new Error('Only image files (PNG, JPG, GIF, WebP) are allowed');
-            if (file.size > 5 * 1024 * 1024) throw new Error('Image is too large. Maximum size is 5MB.');
-            const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-            const { error } = await supabase.storage.from('uploads').upload(fileName, file, {
+            if (!file || !ALLOWED_IMAGE_TYPES[file.type]) throw new Error('Only image files (PNG, JPG, GIF, WebP) are allowed');
+            if (file.size > UPLOAD_MAX_BYTES) throw new Error('Image is too large. Maximum size is 5MB.');
+            const { blob, ext } = await compressImageForUpload(file, kind);
+            const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+            const { error } = await supabase.storage.from('uploads').upload(fileName, blob, {
                 cacheControl: '3600',
                 upsert: false,
+                contentType: blob.type,
             });
             if (error) throw toError(error, 'Could not upload file');
             const { data } = supabase.storage.from('uploads').getPublicUrl(fileName);

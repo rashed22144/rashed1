@@ -196,6 +196,7 @@ const en = {
     commentLimitReached: 'You can add up to {max} comments on this post',
     sponsored: 'Sponsored',
     vipBadge: 'VIP',
+    adBadge: 'AD',
     reportReasonLabel: 'Reason:',
     writeReasonPlaceholder: 'Write reason...',
     noReason: 'No reason',
@@ -334,6 +335,10 @@ const en = {
     postsLast7Days: 'Posts (last 7 days)',
     totalReportsLabel: 'Total Reports',
     featuredServicesLabel: 'Featured Services',
+    reportsCountLabel: 'Reports: {count}',
+    deleteAndBlockImageBtn: 'Delete + block image',
+    comingSoonLabel: 'Coming soon',
+    coverImageAlt: 'Cover image',
     // Access restricted page
     accessRestricted: 'Access Restricted',
     notRegisteredDesc: 'Your account is not registered to use this application. Please verify your credentials or contact the administrator.',

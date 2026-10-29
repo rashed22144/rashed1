@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { backend } from '@/api/backendClient';
+import { backend, removeUploadedFile } from '@/api/backendClient';
 import { Service } from '@/entities/Service';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,7 +9,7 @@ import { Plus, Mail, Calendar, Briefcase, FileText, MessageSquare, Camera, Penci
 import ServiceCard from '../ServiceCard';
 import PostCard from '../community/PostCard';
 import { useLanguage } from '@/lib/LanguageContext';
-import { prepareImageForUpload } from '@/lib/imageUpload';
+import { validateImageFile } from '@/lib/imageUpload';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 
@@ -73,10 +73,13 @@ export default function MyProfilePage() {
         if (!file) return;
         setUploadingAvatar(true);
         try {
-            const prepared = await prepareImageForUpload(file, t);
-            const { file_url } = await backend.integrations.Core.UploadFile({ file: prepared });
+            const errorKey = validateImageFile(file);
+            if (errorKey) throw new Error(t(errorKey));
+            const previousUrl = user?.avatar_url;
+            const { file_url } = await backend.integrations.Core.UploadFile({ file, kind: 'avatar' });
             await backend.auth.updateMe({ avatar_url: file_url });
             setUser(prev => ({ ...prev, avatar_url: file_url }));
+            if (previousUrl && previousUrl !== file_url) removeUploadedFile(previousUrl);
         } catch (error) {
             console.error(error);
             alert([t('uploadInvalidType'), t('uploadTooLarge')].includes(error.message) ? error.message : t('uploadFailed'));
@@ -91,10 +94,13 @@ export default function MyProfilePage() {
         if (!file) return;
         setUploadingCover(true);
         try {
-            const prepared = await prepareImageForUpload(file, t);
-            const { file_url } = await backend.integrations.Core.UploadFile({ file: prepared });
+            const errorKey = validateImageFile(file);
+            if (errorKey) throw new Error(t(errorKey));
+            const previousUrl = user?.cover_url;
+            const { file_url } = await backend.integrations.Core.UploadFile({ file, kind: 'cover' });
             await backend.auth.updateMe({ cover_url: file_url });
             setUser(prev => ({ ...prev, cover_url: file_url }));
+            if (previousUrl && previousUrl !== file_url) removeUploadedFile(previousUrl);
         } catch (error) {
             console.error(error);
             alert([t('uploadInvalidType'), t('uploadTooLarge')].includes(error.message) ? error.message : t('uploadFailed'));
@@ -147,7 +153,7 @@ export default function MyProfilePage() {
                     style={{ background: user.cover_url ? undefined : 'linear-gradient(135deg, #3b82f6, #7c3aed, #ec4899)' }}
                     onClick={() => coverInputRef.current?.click()}
                 >
-                    {user.cover_url && <img src={user.cover_url} alt="cover" className="w-full h-full object-cover" />}
+                    {user.cover_url && <img src={user.cover_url} alt={t('coverImageAlt')} className="w-full h-full object-cover" />}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                         {uploadingCover ? (
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>

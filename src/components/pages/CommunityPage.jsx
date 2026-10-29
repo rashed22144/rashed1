@@ -325,7 +325,7 @@ export default function CommunityPage() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm font-medium text-gray-800 truncate">{v.full_name || v.email.split('@')[0]}</p>
-                                    <span className="text-[10px] bg-yellow-400 text-white font-bold px-1.5 rounded-full">VIP</span>
+                                    <span className="text-[10px] bg-yellow-400 text-white font-bold px-1.5 rounded-full">{t('vipBadge')}</span>
                                 </div>
                             </Link>
                         )) : (

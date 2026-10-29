@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { backend } from '@/api/backendClient';
+import { backend, removeUploadedFile } from '@/api/backendClient';
+import { ServiceAdmin } from '@/entities/ServiceAdmin';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Shield, AlertTriangle, Flag, Ban, Trash2, Crown, Megaphone, UserX, Eye, EyeOff, Search, Settings as SettingsIcon, Users, FileText, Briefcase, Star, TrendingUp, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,12 +35,13 @@ export default function AdminDashboard() {
             setCurrentUser(user);
             if (user.account_type !== 'admin') { setIsLoading(false); return; }
 
-            const [postsResult, usersResult, servicesResult, reviewsResult, commentsResult] = await Promise.allSettled([
+            const [postsResult, usersResult, servicesResult, reviewsResult, commentsResult, servicesAdminResult] = await Promise.allSettled([
                 backend.entities.Post.list('-created_date', 200),
                 backend.entities.UserAdmin.list(),
                 backend.entities.Service.list('-created_date', 200),
                 backend.entities.Review.list('-created_date', 200),
                 backend.entities.PostComment.list('-created_date', 500),
+                ServiceAdmin.list('-created_date', 200),
             ]);
 
             const posts = postsResult.status === 'fulfilled' ? postsResult.value : [];
@@ -56,7 +58,10 @@ export default function AdminDashboard() {
 
             const withReports = posts.filter(p => p.reports && p.reports.length > 0).sort((a, b) => b.reports.length - a.reports.length);
             const commentsWithReports = comments.filter(c => c.reports && c.reports.length > 0).sort((a, b) => b.reports.length - a.reports.length);
-            const servicesWithReports = services.filter(s => (s.reports_count || 0) > 0).sort((a, b) => (b.reports_count || 0) - (a.reports_count || 0));
+            // Admin-only read from the base services table (ServiceAdmin) so report_reasons are visible; services_public only exposes reports_count.
+            const adminServices = servicesAdminResult.status === 'fulfilled' ? servicesAdminResult.value : services;
+            const reportCountOf = (s) => s.reports_count ?? s.reports?.length ?? 0;
+            const servicesWithReports = adminServices.filter(s => reportCountOf(s) > 0).sort((a, b) => reportCountOf(b) - reportCountOf(a));
             setReportedPosts(withReports);
             setReportedComments(commentsWithReports);
             setReportedServices(servicesWithReports);
@@ -85,13 +90,14 @@ export default function AdminDashboard() {
     };
 
     const handleUnhidePost = async (post) => {
-        await backend.entities.Post.update(post.id, { hidden: false, reports: [] });
+        await backend.entities.Post.update(post.id, { hidden: false, reports: [], report_reasons: [] });
         showMsg(t('postRestored'));
         loadData();
     };
 
     const handleDeletePost = async (post) => {
         await backend.entities.Post.delete(post.id);
+        [post.image_url, ...(post.images || [])].forEach((url) => { if (url) removeUploadedFile(url); });
         showMsg(t('postDeleted'));
         loadData();
     };
@@ -103,7 +109,7 @@ export default function AdminDashboard() {
     };
 
     const handleUnhideComment = async (comment) => {
-        await backend.entities.PostComment.update(comment.id, { hidden: false, reports: [] });
+        await backend.entities.PostComment.update(comment.id, { hidden: false, reports: [], report_reasons: [] });
         showMsg(t('commentRestored'));
         loadData();
     };
@@ -122,6 +128,7 @@ export default function AdminDashboard() {
 
     const handleDeleteService = async (service) => {
         await backend.entities.Service.delete(service.id);
+        if (service.image_url) removeUploadedFile(service.image_url);
         showMsg(t('serviceDeleted'));
         loadData();
     };
@@ -183,6 +190,7 @@ export default function AdminDashboard() {
         const toDelete = reportedPosts.filter(p => p.hidden);
         for (const post of toDelete) {
             await backend.entities.Post.delete(post.id);
+            [post.image_url, ...(post.images || [])].forEach((url) => { if (url) removeUploadedFile(url); });
         }
         showMsg(t('hiddenPostsDeleted', { count: toDelete.length }));
         loadData();
@@ -306,13 +314,15 @@ export default function AdminDashboard() {
                                                     {isHidden && <Badge className="bg-red-100 text-red-600 text-xs">{t('hiddenBadge')}</Badge>}
                                                 </div>
                                                 <p className="text-gray-700 text-sm whitespace-pre-wrap">{post.content}</p>
-                                                {(post.images?.length > 0 || post.image_url) && (
-                                                    <img src={post.images?.length > 0 ? post.images[0] : post.image_url} alt="" className="mt-2 max-h-56 rounded-xl border border-gray-100 object-cover" />
-                                                )}
+                                                {(() => { const imgs = post.images?.length > 0 ? post.images : (post.image_url ? [post.image_url] : []); return imgs.length > 0 ? (
+                                                    <div className={`mt-3 grid gap-2 ${imgs.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                                        {imgs.map((src, i) => (<img key={i} src={src} alt={t('galleryImageAlt', { index: i + 1 })} loading="lazy" className="w-full max-h-72 rounded-xl border border-gray-100 object-cover" />))}
+                                                    </div>
+                                                ) : null; })()}
                                             </div>
                                             <div className="flex items-center gap-1 bg-red-50 text-red-600 rounded-full px-3 py-1 text-xs font-bold flex-shrink-0">
                                                 <Flag className="w-3 h-3" />
-                                                {post.reports.length}
+                                                {t('reportsCountLabel', { count: post.reports.length })}
                                             </div>
                                         </div>
 
@@ -324,18 +334,24 @@ export default function AdminDashboard() {
                                         )}
 
                                         <div className="flex flex-wrap gap-2">
-                                            {!isHidden ? (
+                                            <Button size="sm" variant="outline" onClick={() => handleUnhidePost(post)} className="text-green-600 border-green-300 hover:bg-green-50">
+                                                <Eye className="w-3.5 h-3.5 me-1" />{t('restoreBtn')}
+                                            </Button>
+                                            {!isHidden && (
                                                 <Button size="sm" variant="outline" onClick={() => handleHidePost(post)} className="text-orange-600 border-orange-300 hover:bg-orange-50">
                                                     <EyeOff className="w-3.5 h-3.5 me-1" />{t('hideBtn')}
-                                                </Button>
-                                            ) : (
-                                                <Button size="sm" variant="outline" onClick={() => handleUnhidePost(post)} className="text-green-600 border-green-300 hover:bg-green-50">
-                                                    <Eye className="w-3.5 h-3.5 me-1" />{t('restoreBtn')}
                                                 </Button>
                                             )}
                                             <Button size="sm" variant="outline" onClick={() => handleDeletePost(post)} className="text-red-600 border-red-300 hover:bg-red-50">
                                                 <Trash2 className="w-3.5 h-3.5 me-1" />{t('deletePostBtn')}
                                             </Button>
+                                            {/* TODO(future): Delete + block image — placeholder only, blocking is not implemented yet. */}
+                                            <span className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-2.5 py-1.5">
+                                                <Button size="sm" variant="outline" disabled className="text-gray-400 border-gray-200 cursor-not-allowed" aria-disabled="true">
+                                                    <Ban className="w-3.5 h-3.5 me-1" />{t('deleteAndBlockImageBtn')}
+                                                </Button>
+                                                <span className="text-[10px] font-semibold text-gray-400">{t('comingSoonLabel')}</span>
+                                            </span>
                                             <Button size="sm" variant="outline" onClick={() => handleWarnUser(post.author_email)} className="text-yellow-600 border-yellow-300 hover:bg-yellow-50">
                                                 <AlertTriangle className="w-3.5 h-3.5 me-1" />{t('warnBtn')}
                                             </Button>
@@ -425,7 +441,7 @@ export default function AdminDashboard() {
                                         </div>
                                         <div className="flex items-center gap-1 bg-red-50 text-red-600 rounded-full px-3 py-1 text-xs font-bold flex-shrink-0">
                                             <Flag className="w-3 h-3" />
-                                            {service.reports_count || 0}
+                                            {service.reports_count ?? service.reports?.length ?? 0}
                                         </div>
                                     </div>
 
@@ -476,8 +492,8 @@ export default function AdminDashboard() {
                                         <p className="font-semibold text-gray-800 truncate">{user.full_name || user.email}</p>
                                         <p className="text-xs text-gray-400 truncate">{user.email}</p>
                                         <div className="flex items-center gap-2 mt-1">
-                                            {user.account_type === 'vip' && <Badge className="bg-yellow-100 text-yellow-700 text-xs">VIP</Badge>}
-                                            {user.account_type === 'ad' && <Badge className="bg-purple-100 text-purple-700 text-xs">AD</Badge>}
+                                            {user.account_type === 'vip' && <Badge className="bg-yellow-100 text-yellow-700 text-xs">{t('vipBadge')}</Badge>}
+                                            {user.account_type === 'ad' && <Badge className="bg-purple-100 text-purple-700 text-xs">{t('adBadge')}</Badge>}
                                             {user.warnings > 0 && <Badge className="bg-orange-100 text-orange-700 text-xs">{t('warningsLabel')}: {user.warnings}/3</Badge>}
                                             {isBanned && <Badge className="bg-red-100 text-red-700 text-xs">{t('bannedLabel')}</Badge>}
                                         </div>

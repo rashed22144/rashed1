@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 
 // السطر 21 (أصلحنا الكلمة المكسورة)
 import { Service } from '@/entities/Service';
+import { removeUploadedFile } from '@/api/backendClient';
 import { useLanguage } from '@/lib/LanguageContext';
 import { getFriendlyErrorMessage } from '@/lib/friendlyError';
 
@@ -35,6 +36,7 @@ export default function ServiceActionsMenu({ service, onServiceDeleted, isOwner 
         setIsDeleting(true);
         try {
             await Service.delete(service.id);
+            if (service.image_url) removeUploadedFile(service.image_url);
             if (onServiceDeleted) onServiceDeleted(service.id);
             setIsAlertOpen(false);
         } catch (error) {

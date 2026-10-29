@@ -1,5 +1,5 @@
 import React, { useState, memo } from 'react';
-import { backend } from '@/api/backendClient';
+import { backend, removeUploadedFile } from '@/api/backendClient';
 import { Heart, ThumbsUp, MessageCircle, Share2, Send, Trash2, UserPlus, UserCheck, Flag, TrendingUp, Clock, Crown, Megaphone } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -76,6 +76,7 @@ function PostCard({ post, currentUser, onUpdate, onDelete, followData = [], onFo
 
     const handleDelete = async () => {
         await backend.entities.Post.delete(post.id);
+        [post.image_url, ...(post.images || [])].forEach((url) => { if (url) removeUploadedFile(url); });
         onDelete(post.id);
     };
 

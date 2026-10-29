@@ -150,10 +150,10 @@ export default function UserProfilePage() {
                     className={`h-40 rounded-2xl overflow-hidden ${profileUser.account_type === 'vip' ? 'ring-3 ring-yellow-400' : ''}`}
                     style={{ background: profileUser.cover_url ? undefined : profileUser.account_type === 'vip' ? 'linear-gradient(135deg, #f59e0b, #d97706, #b45309)' : profileUser.account_type === 'ad' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed, #6d28d9)' : 'linear-gradient(135deg, #3b82f6, #7c3aed, #ec4899)' }}
                 >
-                    {profileUser.cover_url && <img src={profileUser.cover_url} alt="cover" className="w-full h-full object-cover" />}
+                    {profileUser.cover_url && <img src={profileUser.cover_url} alt={t('coverImageAlt')} className="w-full h-full object-cover" />}
                     {profileUser.account_type === 'vip' && (
                         <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
-                            <Crown className="w-3.5 h-3.5" /> VIP
+                            <Crown className="w-3.5 h-3.5" /> {t('vipBadge')}
                         </div>
                     )}
                 </div>
@@ -185,7 +185,7 @@ export default function UserProfilePage() {
                 <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold text-gray-900">{profileUser.full_name}</h1>
                     {profileUser.account_type === 'vip' && <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />}
-                    {profileUser.account_type === 'ad' && <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">AD</span>}
+                    {profileUser.account_type === 'ad' && <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">{t('adBadge')}</span>}
                 </div>
                 {isOwnProfile && <p className="text-sm text-gray-500 mt-1">{profileEmail}</p>}
                 {profileUser.bio && <p className="text-sm text-gray-700 mt-2">{profileUser.bio}</p>}

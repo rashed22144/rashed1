@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { backend } from '@/api/backendClient';
+import { backend, removeUploadedFile } from '@/api/backendClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
-import { validateImageFile, compressImageFile } from '@/lib/imageUpload';
+import { validateImageFile } from '@/lib/imageUpload';
 
 export default function ImageUpload({ onImageUploaded, currentImageUrl }) {
     const { t, dir } = useLanguage();
@@ -24,10 +24,12 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl }) {
 
         setUploading(true);
         try {
-            const compressedFile = await compressImageFile(file);
-            const result = await backend.integrations.Core.UploadFile({ file: compressedFile });
+            const result = await backend.integrations.Core.UploadFile({ file });
+            const previousUrl = imageUrl;
             setImageUrl(result.file_url);
             if (onImageUploaded) onImageUploaded(result.file_url);
+            // Replacing a staged service image orphans the previous file.
+            if (previousUrl && previousUrl !== result.file_url) removeUploadedFile(previousUrl);
         } catch (error) {
             console.error('Image processing/upload failed:', error);
             alert(t('uploadFailed'));
@@ -58,6 +60,8 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl }) {
     };
 
     const removeImage = () => {
+        // Replacing/removing a staged service image orphans the old file.
+        if (imageUrl) removeUploadedFile(imageUrl);
         setImageUrl('');
         if (onImageUploaded) onImageUploaded('');
     };
