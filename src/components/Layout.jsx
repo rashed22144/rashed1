@@ -31,8 +31,11 @@ export default function Layout({ children }) {
         <div className="min-h-screen bg-gray-50" dir={dir}>
             <header className="sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
-                    <Link to={createPageUrl('HomePage')} className="font-black text-lg text-blue-600 shrink-0">
-                        {t('appName')}
+                    <Link to={createPageUrl('HomePage')} className="group flex items-center gap-2 shrink-0" aria-label={t('appName')}>
+                        <img src={`${process.env.PUBLIC_URL}/image.png`} alt="" aria-hidden="true" className="h-10 w-10 shrink-0 rounded-full object-cover transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110" />
+                        <span className="font-black text-lg tracking-tight text-gray-900">
+                            {t('appName')}<span className="text-amber-500">!</span>
+                        </span>
                     </Link>
 
                     <div className="flex-1 min-w-[180px] order-3 md:order-2">
